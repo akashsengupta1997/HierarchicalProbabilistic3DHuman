@@ -1,3 +1,6 @@
+"""
+Refer to https://arxiv.org/pdf/1710.03746.pdf for more details on Matrix-Fisher distributions.
+"""
 from collections import defaultdict
 import torch
 from torch import nn as nn
@@ -18,7 +21,7 @@ def immediate_parents_to_all_parents(immediate_parents):
     return parents_dict
 
 
-class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
+class PoseMFShapeGaussianNet(nn.Module):
     def __init__(self,
                  smpl_parents,
                  resnet_in_channels=3,
@@ -33,7 +36,7 @@ class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
         Also get cam and glob separately to Gaussian distribution predictor.
         Pose predictions follow the kinematic chain.
         """
-        super(SingleInputKinematicPoseMFShapeGaussianwithGlobCam, self).__init__()
+        super(PoseMFShapeGaussianNet, self).__init__()
 
         self.add_delta_identity_to_pose_F = add_delta_identity_to_pose_F
         self.pose_F_delta_identity_weight = pose_F_delta_identity_weight
@@ -44,7 +47,7 @@ class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
         self.num_joints = len(self.parents_dict)
         self.num_pose_params = self.num_joints * 3 * 3  # 3x3 matrix parameter for MF distribution for each joint.
 
-        # Number of shape, glob and cam parameters
+        # Number of shape, glob and cam parameters + sensible initial estimates for weak-perspective camera and global rotation
         self.num_shape_params = num_smpl_betas
         if use_6d_pose_for_glob:
             self.num_glob_params = 6
@@ -54,7 +57,7 @@ class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
             init_glob = torch.tensor([0.0, 0.0, 0.0]).float()
         self.register_buffer('init_glob', init_glob)
         self.num_cam_params = 3
-        init_cam = torch.tensor([0.9, 0.0, 0.0]).float()  # Initialise orthographic camera scale at 0.9
+        init_cam = torch.tensor([0.9, 0.0, 0.0]).float()  # Initialise weak-perspective camera scale at 0.9
         self.register_buffer('init_cam', init_cam)
 
         # ResNet Image Encoder
@@ -124,7 +127,6 @@ class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
         pose_V = torch.zeros(batch_size, self.num_joints, 3, 3, device=device)  # (bsize, 23, 3, 3)
         pose_U_proper = torch.zeros(batch_size, self.num_joints, 3, 3, device=device)  # (bsize, 23, 3, 3)
         pose_S_proper = torch.zeros(batch_size, self.num_joints, 3, device=device)  # (bsize, 23, 3)
-        # pose_V_proper = torch.zeros(batch_size, self.num_joints, 3, 3, device=device)  # (bsize, 23, 3, 3)
         pose_rotmats_mode = torch.zeros(batch_size, self.num_joints, 3, 3, device=device)  # (bsize, 23, 3, 3)
 
         for joint in range(self.num_joints):
@@ -144,13 +146,16 @@ class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
                 joint_F = joint_F + self.pose_F_delta_identity_weight * torch.eye(3, device=device)[None, :, :].expand_as(joint_F)
 
             joint_U, joint_S, joint_V = torch.svd(joint_F.cpu())  # (bsize, 3, 3), (bsize, 3), (bsize, 3, 3)
+            # I found that SVD is faster on CPU than GPU, but YMMV.
             with torch.no_grad():
                 det_joint_U, det_joint_V = torch.det(joint_U).to(device), torch.det(joint_V).to(device)  # (bsize,), (bsize,)
             joint_U, joint_S, joint_V = joint_U.to(device), joint_S.to(device), joint_V.to(device)
 
+            # "Proper" SVD
             joint_U_proper = joint_U.clone()
             joint_S_proper = joint_S.clone()
             joint_V_proper = joint_V.clone()
+            # Ensure that U_proper and V_proper are rotation matrices (orthogonal with det = 1).
             joint_U_proper[:, :, 2] *= det_joint_U.unsqueeze(-1)
             joint_S_proper[:, 2] *= det_joint_U * det_joint_V
             joint_V_proper[:, :, 2] *= det_joint_V.unsqueeze(-1)
@@ -163,9 +168,7 @@ class SingleInputKinematicPoseMFShapeGaussianwithGlobCam(nn.Module):
             pose_V[:, joint, :, :] = joint_V
             pose_U_proper[:, joint, :, :] = joint_U_proper
             pose_S_proper[:, joint, :] = joint_S_proper
-            # pose_V_proper[:, joint, :, :] = joint_V_proper
             pose_rotmats_mode[:, joint, :, :] = joint_rotmat_mode
 
-        # print((torch.det(pose_rotmats_mode) - 1).abs().max(), (torch.det(pose_U_proper) - 1).abs().max())
         return pose_F, pose_U, pose_S, pose_V, pose_rotmats_mode, shape_dist, glob, cam
 
