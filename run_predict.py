@@ -85,6 +85,9 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print('\nDevice: {}'.format(device))
 
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+
     run_predict(device=device,
                 image_dir=args.image_dir,
                 save_dir=args.save_dir,
