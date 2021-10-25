@@ -24,13 +24,7 @@ def immediate_parents_to_all_parents(immediate_parents):
 class PoseMFShapeGaussianNet(nn.Module):
     def __init__(self,
                  smpl_parents,
-                 resnet_in_channels=3,
-                 resnet_layers=50,
-                 use_6d_pose_for_glob=True,
-                 add_delta_identity_to_pose_F=False,
-                 pose_F_delta_identity_weight=1.,
-                 feats_shape_glob_cam_embed_dim=64,
-                 num_smpl_betas=10):
+                 config):
         """
         Input --> ResNet --> image features --> FC layers --> Hierarchical Kinematic Matrix Fisher over pose and Diagonal Gaussian over shape.
         Also get cam and glob separately to Gaussian distribution predictor.
@@ -38,8 +32,7 @@ class PoseMFShapeGaussianNet(nn.Module):
         """
         super(PoseMFShapeGaussianNet, self).__init__()
 
-        self.add_delta_identity_to_pose_F = add_delta_identity_to_pose_F
-        self.pose_F_delta_identity_weight = pose_F_delta_identity_weight
+        self.config = config
 
         # Num pose parameters + Kinematic tree
         self.parents_dict = immediate_parents_to_all_parents(smpl_parents)
@@ -48,26 +41,23 @@ class PoseMFShapeGaussianNet(nn.Module):
         self.num_pose_params = self.num_joints * 3 * 3  # 3x3 matrix parameter for MF distribution for each joint.
 
         # Number of shape, glob and cam parameters + sensible initial estimates for weak-perspective camera and global rotation
-        self.num_shape_params = num_smpl_betas
-        if use_6d_pose_for_glob:
-            self.num_glob_params = 6
-            init_glob = rotmat_to_rot6d(torch.eye(3)[None, :].float())
-        else:
-            self.num_glob_params = 3
-            init_glob = torch.tensor([0.0, 0.0, 0.0]).float()
+        self.num_shape_params = self.config.MODEL.NUM_SMPL_BETAS
+        self.num_glob_params = 6
+        init_glob = rotmat_to_rot6d(torch.eye(3)[None, :].float())
+
         self.register_buffer('init_glob', init_glob)
         self.num_cam_params = 3
         init_cam = torch.tensor([0.9, 0.0, 0.0]).float()  # Initialise weak-perspective camera scale at 0.9
         self.register_buffer('init_cam', init_cam)
 
         # ResNet Image Encoder
-        if resnet_layers == 18:
-            self.image_encoder = resnet18(in_channels=resnet_in_channels,
+        if self.config.MODEL.NUM_RESNET_LAYERS == 18:
+            self.image_encoder = resnet18(in_channels=self.config.MODEL.NUM_IN_CHANNELS,
                                           pretrained=False)
             num_image_features = 512
             fc1_dim = 512
-        elif resnet_layers == 50:
-            self.image_encoder = resnet50(in_channels=resnet_in_channels,
+        elif self.config.MODEL.NUM_RESNET_LAYERS == 50:
+            self.image_encoder = resnet50(in_channels=self.config.MODEL.NUM_IN_CHANNELS,
                                           pretrained=False)
             num_image_features = 2048
             fc1_dim = 1024
@@ -82,16 +72,16 @@ class PoseMFShapeGaussianNet(nn.Module):
         self.fc_cam = nn.Linear(fc1_dim, self.num_cam_params)
 
         self.fc_embed = nn.Linear(num_image_features + self.num_shape_params * 2 + self.num_glob_params + self.num_cam_params,
-                                  feats_shape_glob_cam_embed_dim)
+                                  self.config.MODEL.EMBED_DIM)
 
         # FC Pose networks for each joint
         self.fc_pose = nn.ModuleList()
         for joint in range(self.num_joints):
             num_parents = len(self.parents_dict[joint])
-            input_dim = feats_shape_glob_cam_embed_dim + num_parents * (9 + 3 + 9)  # (passing (U, S, UV.T) for each parent to fc_pose - these have shapes (3x3), (3,), (3x3)
-            self.fc_pose.append(nn.Sequential(nn.Linear(input_dim, feats_shape_glob_cam_embed_dim // 2),
+            input_dim = self.config.MODEL.EMBED_DIM + num_parents * (9 + 3 + 9)  # (passing (U, S, UV.T) for each parent to fc_pose - these have shapes (3x3), (3,), (3x3)
+            self.fc_pose.append(nn.Sequential(nn.Linear(input_dim, self.config.MODEL.EMBED_DIM // 2),
                                               self.activation,
-                                              nn.Linear(feats_shape_glob_cam_embed_dim // 2, 9)))
+                                              nn.Linear(self.config.MODEL.EMBED_DIM // 2, 9)))
 
     def forward(self, input, input_feats=None):
         """
@@ -118,7 +108,7 @@ class PoseMFShapeGaussianNet(nn.Module):
         cam = delta_cam + self.init_cam  # (bsize, 3)
 
         # Input Feats/Shape/Glob/Cam embed
-        embed = self.activation(self.fc_embed(torch.cat([input_feats, shape_params, glob, cam], dim=1)))  # (bsize, feats_shape_glob_cam_embed_dim)
+        embed = self.activation(self.fc_embed(torch.cat([input_feats, shape_params, glob, cam], dim=1)))  # (bsize, embed dim)
 
         # Pose
         pose_F = torch.zeros(batch_size, self.num_joints, 3, 3, device=device)  # (bsize, 23, 3, 3)
@@ -142,8 +132,8 @@ class PoseMFShapeGaussianNet(nn.Module):
             else:
                 joint_F = fc_joint(embed).view(-1, 3, 3)  # (bsize, 3, 3)
 
-            if self.add_delta_identity_to_pose_F:
-                joint_F = joint_F + self.pose_F_delta_identity_weight * torch.eye(3, device=device)[None, :, :].expand_as(joint_F)
+            if self.config.MODEL.DELTA_I:
+                joint_F = joint_F + self.config.MODEL.DELTA_I_WEIGHT * torch.eye(3, device=device)[None, :, :].expand_as(joint_F)
 
             joint_U, joint_S, joint_V = torch.svd(joint_F.cpu())  # (bsize, 3, 3), (bsize, 3), (bsize, 3, 3)
             # I found that SVD is faster on CPU than GPU, but YMMV.

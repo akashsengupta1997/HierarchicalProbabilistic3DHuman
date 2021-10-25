@@ -1,13 +1,10 @@
 import torch
 import numpy as np
-from smplx.lbs import batch_rodrigues
-
-import config
 
 from utils.rigid_transform_utils import quat_to_rotmat, aa_rotate_translate_points_pytorch3d
 from utils.cam_utils import orthographic_project_torch
 from utils.joints2d_utils import undo_keypoint_normalisation
-from utils.label_conversions import convert_heatmaps_to_2Djoints_coordinates_torch
+from utils.label_conversions import convert_heatmaps_to_2Djoints_coordinates_torch, ALL_JOINTS_TO_COCO_MAP
 
 
 def bingham_sampling_for_matrix_fisher_torch(A,
@@ -202,14 +199,14 @@ def joints2D_error_sorted_verts_sampling(pred_vertices_samples,
     """
     Sort 3D vertex mesh samples according to consistency (error) between projected 2D joint samples
     and input 2D joints.
-    :param pred_vertices_samples: (N, 6890, 3) array of candidate vertex mesh samples.
-    :param pred_joints_samples: (N, 90, 3) array of candidate J3D samples.
-    :param input_joints2D_heatmaps: (1, 17, img_wh, img_wh) array of 2D joint locations and confidences.
+    :param pred_vertices_samples: (N, 6890, 3) tensor of candidate vertex mesh samples.
+    :param pred_joints_samples: (N, 90, 3) tensor of candidate J3D samples.
+    :param input_joints2D_heatmaps: (1, 17, img_wh, img_wh) tensor of 2D joint locations and confidences.
     :param pred_cam_wp: (1, 3) array with predicted weak-perspective camera.
-    :return:
+    :return: pred_vertices_samples_error_sorted: (N, 6890, 3) tensor of J2D-error-sorted vertex mesh samples.
     """
     # Project 3D joint samples to 2D (using COCO joints)
-    pred_joints_coco_samples = pred_joints_samples[:, config.ALL_JOINTS_TO_COCO_MAP, :]
+    pred_joints_coco_samples = pred_joints_samples[:, ALL_JOINTS_TO_COCO_MAP, :]
     pred_joints_coco_samples = aa_rotate_translate_points_pytorch3d(points=pred_joints_coco_samples,
                                                                     axes=torch.tensor([1., 0., 0.], device=pred_vertices_samples.device).float(),
                                                                     angles=np.pi,

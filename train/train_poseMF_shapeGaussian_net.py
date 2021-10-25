@@ -59,7 +59,6 @@ def train_poseMF_shapeGaussian_net(device,
                                    edge_nms=False,
                                    sample_on_cpu=False,
                                    num_smpl_betas=10,
-                                   meas2smpl_regressor=None,
                                    change_loss_stage_from_epoch=999,
                                    staged_loss_weights=None):
     """

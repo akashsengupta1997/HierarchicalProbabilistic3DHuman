@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-import config
+from utils.label_conversions import TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP
 
 
 def random_joints2D_deviation(joints2D, delta_j2d_dev_range=[-5, 5], delta_j2d_hip_dev_range=[-15, 15]):
@@ -45,8 +45,8 @@ def random_remove_bodyparts(seg, classes_to_remove, probabilities_to_remove,
         seg[rand_vec] = samples_to_augment
 
         if joints2D_vis is not None:
-            if class_to_remove in config.TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP.keys():
-                joint_to_remove = config.TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP[class_to_remove]
+            if class_to_remove in TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP.keys():
+                joint_to_remove = TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP[class_to_remove]
 
                 # Determine which samples with removed class_to_remove will also have joints removed
                 rand_vec_joints = np.random.rand(batch_size) < probability_to_remove_joints

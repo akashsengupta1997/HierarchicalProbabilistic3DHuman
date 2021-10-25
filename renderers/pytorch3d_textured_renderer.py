@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 from scipy.io import loadmat
 
-import config
+from configs import paths
 
 # Data structures and functions for rendering
 from pytorch3d.structures import Meshes
@@ -139,7 +139,7 @@ class TexturedIUVRenderer(nn.Module):
         self.img_wh = img_wh
 
         # UV pre-processing for textures
-        verts_uv_offset, verts_iuv, verts_map, faces_densepose = preprocess_densepose_UV(uv_path=config.DP_UV_PROCESSED_FILE, batch_size=batch_size)
+        verts_uv_offset, verts_iuv, verts_map, faces_densepose = preprocess_densepose_UV(uv_path=paths.DP_UV_PROCESSED_FILE, batch_size=batch_size)
         self.verts_uv_offset = verts_uv_offset.to(device)
         self.verts_iuv = verts_iuv.to(device)
         self.verts_map = verts_map.to(device)

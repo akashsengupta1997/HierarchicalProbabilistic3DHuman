@@ -17,22 +17,19 @@ from utils.sampling_utils import compute_vertex_uncertainties_by_poseMF_shapeGau
 
 
 def predict_poseMF_shapeGaussian_net(pose_shape_model,
+                                     pose_shape_config,
                                      smpl_model,
                                      hrnet_model,
                                      hrnet_config,
                                      object_detect_model,
+                                     edge_detect_model,
                                      device,
                                      image_dir,
                                      save_dir,
-                                     proxy_rep_wh=256,
-                                     bbox_scale_factor=1.2,
-                                     edge_detector=None,
-                                     edge_nms=True,
                                      joints2Dvisib_threshold=0.75,
-                                     person_box_threshold=0.8,
                                      visualise_wh=512,
                                      visualise_uncropped=True,
-                                     visualise_samples=True):
+                                     visualise_samples=False):
     """
     Predictor for SingleInputKinematicPoseMFShapeGaussianwithGlobCam on unseen test data.
     Input --> ResNet --> image features --> FC layers --> MF over pose and Diagonal Gaussian over shape.
@@ -51,8 +48,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                            'ambient_color': 0.5 * torch.ones(1, 3, device=device, dtype=torch.float32),
                            'diffuse_color': 0.3 * torch.ones(1, 3, device=device, dtype=torch.float32),
                            'specular_color': torch.zeros(1, 3, device=device, dtype=torch.float32)}
-    reposed_cam_t = torch.tensor([[0., -0.2, 2.5]], device=device)
-    reposed_orthographic_scale = torch.tensor([[0.85, 0.85]], device=device)
+    fixed_cam_t = torch.tensor([[0., -0.2, 2.5]], device=device)
+    fixed_orthographic_scale = torch.tensor([[0.9, 0.9]], device=device)
 
     hrnet_model.eval()
     object_detect_model.eval()
@@ -68,8 +65,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                                          hrnet_config=hrnet_config,
                                          object_detect_model=object_detect_model,
                                          image=image,
-                                         object_detect_threshold=person_box_threshold,
-                                         bbox_scale_factor=bbox_scale_factor)
+                                         object_detect_threshold=pose_shape_config.DATA.BBOX_THRESHOLD,
+                                         bbox_scale_factor=pose_shape_config.DATA.BBOX_SCALE_FACTOR)
 
             # Transform predicted 2D joints and image from HRNet input size to input proxy representation size
             hrnet_input_centre = torch.tensor([[hrnet_output['cropped_image'].shape[1],
@@ -80,7 +77,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                                               dtype=torch.float32,
                                               device=device)
             cropped_for_proxy = batch_crop_pytorch_affine(input_wh=(hrnet_config.MODEL.IMAGE_SIZE[0], hrnet_config.MODEL.IMAGE_SIZE[1]),
-                                                          output_wh=(proxy_rep_wh, proxy_rep_wh),
+                                                          output_wh=(pose_shape_config.DATA.PROXY_REP_SIZE, pose_shape_config.DATA.PROXY_REP_SIZE),
                                                           num_to_crop=1,
                                                           device=device,
                                                           joints2D=hrnet_output['joints2D'][None, :, :],
@@ -91,10 +88,10 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                                                           orig_scale_factor=1.0)
 
             # Create proxy representation with 1) Edge detection and 2) 2D joints heatmaps generation
-            edge_detector_output = edge_detector(cropped_for_proxy['rgb'])
-            proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if edge_nms else edge_detector_output['thresholded_grad_magnitude']
+            edge_detector_output = edge_detect_model(cropped_for_proxy['rgb'])
+            proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_config.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
             proxy_rep_heatmaps = convert_2Djoints_to_gaussian_heatmaps_torch(joints2D=cropped_for_proxy['joints2D'],
-                                                                             img_wh=proxy_rep_wh,
+                                                                             img_wh=pose_shape_config.DATA.PROXY_REP_SIZE,
                                                                              std=4)
             hrnet_joints2Dvisib = hrnet_output['joints2Dconfs'] > joints2Dvisib_threshold
             hrnet_joints2Dvisib[[0, 1, 2, 3, 4, 5, 6, 11, 12]] = True  # Only removing joints [7, 8, 9, 10, 13, 14, 15, 16] if occluded
@@ -167,12 +164,12 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                 use_mean_shape=True)
 
             if visualise_samples:
-                num_samples = 12
+                num_samples = 11
                 # Prepare vertex samples for visualisation
                 pred_vertices_samples = joints2D_error_sorted_verts_sampling(pred_vertices_samples=pred_vertices_samples,
                                                                              pred_joints_samples=pred_joints_samples,
                                                                              input_joints2D_heatmaps=proxy_rep_input[:, 1:, :, :],
-                                                                             pred_cam_wp=pred_cam_wp)[:num_samples, :, :]  # (12, 6890, 3)
+                                                                             pred_cam_wp=pred_cam_wp)[:num_samples, :, :]  # (11, 6890, 3)
                 # Need to flip pred_vertices before projecting so that they project the right way up.
                 pred_vertices_samples = aa_rotate_translate_points_pytorch3d(points=pred_vertices_samples,
                                                                              axes=torch.tensor([1., 0., 0.], device=device),
@@ -182,6 +179,9 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                                                                                    axes=torch.tensor([0., 1., 0.], device=device),
                                                                                    angles=-np.pi / 2.,
                                                                                    translations=torch.zeros(3, device=device))
+
+                pred_vertices_samples = torch.cat([pred_vertices_mode, pred_vertices_samples], dim=0)  # (12, 6890, 3)
+                pred_vertices_rot90_samples = torch.cat([pred_vertices_rot90_mode, pred_vertices_rot90_samples], dim=0)  # (12, 6890, 3)
 
             # Generate per-vertex uncertainty colourmap
             vertex_var_norm = plt.Normalize(vmin=0.0, vmax=0.2, clip=True)
@@ -204,32 +204,32 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             body_vis_rgb = body_vis_rgb.cpu().detach().numpy()[0].transpose(1, 2, 0)
 
             body_vis_rgb_rot90 = body_vis_renderer(vertices=pred_vertices_rot90_mode,
-                                                   cam_t=cam_t,
-                                                   orthographic_scale=orthographic_scale,
+                                                   cam_t=fixed_cam_t,
+                                                   orthographic_scale=fixed_orthographic_scale,
                                                    lights_rgb_settings=lights_rgb_settings,
                                                    verts_features=vertex_var_colours)['rgb_images'].cpu().detach().numpy()[0]
             body_vis_rgb_rot180 = body_vis_renderer(vertices=pred_vertices_rot180_mode,
-                                                    cam_t=cam_t,
-                                                    orthographic_scale=orthographic_scale,
+                                                    cam_t=fixed_cam_t,
+                                                    orthographic_scale=fixed_orthographic_scale,
                                                     lights_rgb_settings=lights_rgb_settings,
                                                     verts_features=vertex_var_colours)['rgb_images'].cpu().detach().numpy()[0]
             body_vis_rgb_rot270 = body_vis_renderer(vertices=pred_vertices_rot270_mode,
                                                     textures=plain_texture,
-                                                    cam_t=cam_t,
-                                                    orthographic_scale=orthographic_scale,
+                                                    cam_t=fixed_cam_t,
+                                                    orthographic_scale=fixed_orthographic_scale,
                                                     lights_rgb_settings=lights_rgb_settings,
                                                     verts_features=vertex_var_colours)['rgb_images'].cpu().detach().numpy()[0]
 
             # Reposed body visualisation
             reposed_body_vis_rgb = body_vis_renderer(vertices=pred_reposed_vertices_flipped_mean,
                                                      textures=plain_texture,
-                                                     cam_t=reposed_cam_t,
-                                                     orthographic_scale=reposed_orthographic_scale,
+                                                     cam_t=fixed_cam_t,
+                                                     orthographic_scale=fixed_orthographic_scale,
                                                      lights_rgb_settings=lights_rgb_settings)['rgb_images'].cpu().detach().numpy()[0]
             reposed_body_vis_rgb_rot90 = body_vis_renderer(vertices=pred_reposed_vertices_rot90_mean,
                                                            textures=plain_texture,
-                                                           cam_t=reposed_cam_t,
-                                                           orthographic_scale=reposed_orthographic_scale,
+                                                           cam_t=fixed_cam_t,
+                                                           orthographic_scale=fixed_orthographic_scale,
                                                            lights_rgb_settings=lights_rgb_settings)['rgb_images'].cpu().detach().numpy()[0]
 
             # Combine all visualisations
@@ -245,8 +245,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             proxy_rep_input = np.stack([proxy_rep_input]*3, axis=-1)  # single-channel to RGB
             proxy_rep_input = cv2.resize(proxy_rep_input, (visualise_wh, visualise_wh))
             for joint_num in range(cropped_for_proxy['joints2D'].shape[1]):
-                hor_coord = cropped_for_proxy['joints2D'][0, joint_num, 0].item() * visualise_wh / proxy_rep_wh
-                ver_coord = cropped_for_proxy['joints2D'][0, joint_num, 1].item() * visualise_wh / proxy_rep_wh
+                hor_coord = cropped_for_proxy['joints2D'][0, joint_num, 0].item() * visualise_wh / pose_shape_config.DATA.PROXY_REP_SIZE
+                ver_coord = cropped_for_proxy['joints2D'][0, joint_num, 1].item() * visualise_wh / pose_shape_config.DATA.PROXY_REP_SIZE
                 cv2.circle(proxy_rep_input,
                            (int(hor_coord), int(ver_coord)),
                            radius=3,
@@ -280,7 +280,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                 iuv_to_uncrop = body_vis_output['iuv_images'].permute(0, 3, 1, 2).contiguous().cpu().detach().numpy()
                 bbox_centres = hrnet_output['bbox_centre'][None].cpu().detach().numpy()
                 bbox_whs = torch.max(hrnet_output['bbox_height'], hrnet_output['bbox_width'])[None].cpu().detach().numpy()
-                bbox_whs *= bbox_scale_factor
+                bbox_whs *= pose_shape_config.DATA.BBOX_SCALE_FACTOR
                 uncropped_for_visualise = batch_crop_opencv_affine(output_wh=(visualise_wh, visualise_wh),
                                                                    num_to_crop=1,
                                                                    rgb=rgb_to_uncrop,
@@ -303,7 +303,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                 samples_cols = 6
                 samples_fig = np.zeros((samples_rows * visualise_wh, samples_cols * visualise_wh, 3),
                                        dtype=body_vis_rgb.dtype)
-                for i in range(num_samples):
+                for i in range(num_samples + 1):
                     body_vis_output_sample = body_vis_renderer(vertices=pred_vertices_samples[[i]],
                                                                textures=plain_texture,
                                                                cam_t=cam_t,
@@ -315,8 +315,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                     body_vis_rgb_sample = body_vis_rgb_sample.cpu().detach().numpy()[0].transpose(1, 2, 0)
 
                     body_vis_rgb_rot90_sample = body_vis_renderer(vertices=pred_vertices_rot90_samples[[i]],
-                                                                  cam_t=cam_t,
-                                                                  orthographic_scale=orthographic_scale,
+                                                                  cam_t=fixed_cam_t,
+                                                                  orthographic_scale=fixed_orthographic_scale,
                                                                   lights_rgb_settings=lights_rgb_settings,
                                                                   verts_features=vertex_var_colours)['rgb_images'].cpu().detach().numpy()[0]
 
@@ -327,6 +327,10 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                     row = (2 * i + 1) // samples_cols
                     col = (2 * i + 1) % samples_cols
                     samples_fig[row * visualise_wh:(row + 1) * visualise_wh, col * visualise_wh:(col + 1) * visualise_wh] = body_vis_rgb_rot90_sample
+
+                    samples_fig_save_path = os.path.splitext(vis_save_path)[0] + '_samples.png'
+                    cv2.imwrite(samples_fig_save_path, samples_fig[:, :, ::-1] * 255)
+
 
 
 

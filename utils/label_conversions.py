@@ -2,6 +2,39 @@ import numpy as np
 import torch
 
 
+COCO_JOINTS = {
+    'Right Ankle': 16, 'Right Knee': 14, 'Right Hip': 12,
+    'Left Hip': 11, 'Left Knee': 13, 'Left Ankle': 15,
+    'Right Wrist': 10, 'Right Elbow': 8, 'Right Shoulder': 6,
+    'Left Shoulder': 5, 'Left Elbow': 7, 'Left Wrist': 9,
+    'Right Ear': 4, 'Left Ear': 3, 'Right Eye': 2, 'Left Eye': 1,
+    'Nose': 0
+}
+
+# The SMPL model (im smpl_official.py) returns a large superset of joints.
+# Different subsets are used during training - e.g. H36M 3D joints convention and COCO 2D joints convention.
+# Joint label conversions from SMPL to H36M/COCO/LSP
+ALL_JOINTS_TO_COCO_MAP = [24, 26, 25, 28, 27, 16, 17, 18, 19, 20, 21, 1, 2, 4, 5, 7, 8]  # Using OP Hips
+ALL_JOINTS_TO_H36M_MAP = list(range(73, 90))
+H36M_TO_J17 = [6, 5, 4, 1, 2, 3, 16, 15, 14, 11, 12, 13, 8, 10, 0, 7, 9]
+H36M_TO_J14 = H36M_TO_J17[:14]
+
+# Joint label and body part seg label matching
+# 24 part seg: COCO Joints
+TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP = {19: 7,
+                                          21: 7,
+                                          20: 8,
+                                          22: 8,
+                                          4: 9,
+                                          3: 10,
+                                          12: 13,
+                                          14: 13,
+                                          11: 14,
+                                          13: 14,
+                                          5: 15,
+                                          6: 16}
+
+
 def convert_densepose_seg_to_14part_labels(densepose_seg):
     """
     Convert 24 body-part labels (DensePose convention) to 14 body-part labels.

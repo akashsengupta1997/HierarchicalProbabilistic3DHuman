@@ -7,16 +7,16 @@ except ImportError:
     from smplx.utils import SMPLOutput
 from smplx.lbs import vertices2joints
 
-import config
+from configs import paths
 
 
 class SMPL(_SMPL):
     """ Extension of the official SMPL implementation to support more joints """
     def __init__(self, *args, **kwargs):
         super(SMPL, self).__init__(*args, **kwargs)
-        J_regressor_extra = np.load(config.J_REGRESSOR_EXTRA)
-        J_regressor_cocoplus = np.load(config.COCOPLUS_REGRESSOR)
-        J_regressor_h36m = np.load(config.H36M_REGRESSOR)
+        J_regressor_extra = np.load(paths.J_REGRESSOR_EXTRA)
+        J_regressor_cocoplus = np.load(paths.COCOPLUS_REGRESSOR)
+        J_regressor_h36m = np.load(paths.H36M_REGRESSOR)
         self.register_buffer('J_regressor_extra', torch.tensor(J_regressor_extra,
                                                                dtype=torch.float32))
         self.register_buffer('J_regressor_cocoplus', torch.tensor(J_regressor_cocoplus,
