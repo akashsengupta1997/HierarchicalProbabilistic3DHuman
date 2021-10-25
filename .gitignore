@@ -4,3 +4,10 @@
 
 #Pycache
 *.pyc
+
+#Weights
+*pth
+*tar
+
+#Demo
+demo/output/*
