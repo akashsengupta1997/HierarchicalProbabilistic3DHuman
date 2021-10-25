@@ -35,8 +35,8 @@ def run_predict(device,
 
     # Edge detector
     edge_detect_model = CannyEdgeDetector(non_max_suppression=config.DATA.EDGE_NMS,
-                                          gaussian_filter_std=config.DATA.GAUSSIAN_STD,
-                                          gaussian_filter_size=config.DATA.GAUSSIAN_SIZE,
+                                          gaussian_filter_std=config.DATA.EDGE_GAUSSIAN_STD,
+                                          gaussian_filter_size=config.DATA.EDGE_GAUSSIAN_SIZE,
                                           threshold=config.DATA.EDGE_THRESHOLD).to(device)
 
     # SMPL model
