@@ -49,7 +49,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                            'diffuse_color': 0.3 * torch.ones(1, 3, device=device, dtype=torch.float32),
                            'specular_color': torch.zeros(1, 3, device=device, dtype=torch.float32)}
     fixed_cam_t = torch.tensor([[0., -0.2, 2.5]], device=device)
-    fixed_orthographic_scale = torch.tensor([[0.9, 0.9]], device=device)
+    fixed_orthographic_scale = torch.tensor([[0.95, 0.95]], device=device)
 
     hrnet_model.eval()
     object_detect_model.eval()
