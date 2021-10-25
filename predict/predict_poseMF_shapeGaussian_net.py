@@ -185,7 +185,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
 
             # Generate per-vertex uncertainty colourmap
             vertex_var_norm = plt.Normalize(vmin=0.0, vmax=0.2, clip=True)
-            vertex_var_colours = plt.cm.jet(vertex_var_norm(per_vertex_3Dvar))[:, :3]
+            vertex_var_colours = plt.cm.jet(vertex_var_norm(per_vertex_3Dvar.cpu().detach().numpy()))[:, :3]
             vertex_var_colours = torch.from_numpy(vertex_var_colours[None, :, :]).to(device).float()
 
             # Render visualisation outputs

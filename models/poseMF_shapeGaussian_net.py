@@ -36,7 +36,6 @@ class PoseMFShapeGaussianNet(nn.Module):
 
         # Num pose parameters + Kinematic tree
         self.parents_dict = immediate_parents_to_all_parents(smpl_parents)
-        print(self.parents_dict)
         self.num_joints = len(self.parents_dict)
         self.num_pose_params = self.num_joints * 3 * 3  # 3x3 matrix parameter for MF distribution for each joint.
 
