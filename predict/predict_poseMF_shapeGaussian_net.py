@@ -315,10 +315,10 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                     body_vis_rgb_sample = body_vis_rgb_sample.cpu().detach().numpy()[0].transpose(1, 2, 0)
 
                     body_vis_rgb_rot90_sample = body_vis_renderer(vertices=pred_vertices_rot90_samples[[i]],
+                                                                  textures=plain_texture,
                                                                   cam_t=fixed_cam_t,
                                                                   orthographic_scale=fixed_orthographic_scale,
-                                                                  lights_rgb_settings=lights_rgb_settings,
-                                                                  verts_features=vertex_var_colours)['rgb_images'].cpu().detach().numpy()[0]
+                                                                  lights_rgb_settings=lights_rgb_settings)['rgb_images'].cpu().detach().numpy()[0]
 
                     row = (2 * i) // samples_cols
                     col = (2 * i) % samples_cols
