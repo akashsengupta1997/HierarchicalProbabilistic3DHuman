@@ -164,12 +164,12 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                 use_mean_shape=True)
 
             if visualise_samples:
-                num_samples = 11
+                num_samples = 8
                 # Prepare vertex samples for visualisation
                 pred_vertices_samples = joints2D_error_sorted_verts_sampling(pred_vertices_samples=pred_vertices_samples,
                                                                              pred_joints_samples=pred_joints_samples,
                                                                              input_joints2D_heatmaps=proxy_rep_input[:, 1:, :, :],
-                                                                             pred_cam_wp=pred_cam_wp)[:num_samples, :, :]  # (11, 6890, 3)
+                                                                             pred_cam_wp=pred_cam_wp)[:num_samples, :, :]  # (8, 6890, 3)
                 # Need to flip pred_vertices before projecting so that they project the right way up.
                 pred_vertices_samples = aa_rotate_translate_points_pytorch3d(points=pred_vertices_samples,
                                                                              axes=torch.tensor([1., 0., 0.], device=device),
@@ -180,8 +180,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                                                                                    angles=-np.pi / 2.,
                                                                                    translations=torch.zeros(3, device=device))
 
-                pred_vertices_samples = torch.cat([pred_vertices_mode, pred_vertices_samples], dim=0)  # (12, 6890, 3)
-                pred_vertices_rot90_samples = torch.cat([pred_vertices_rot90_mode, pred_vertices_rot90_samples], dim=0)  # (12, 6890, 3)
+                pred_vertices_samples = torch.cat([pred_vertices_mode, pred_vertices_samples], dim=0)  # (9, 6890, 3)
+                pred_vertices_rot90_samples = torch.cat([pred_vertices_rot90_mode, pred_vertices_rot90_samples], dim=0)  # (9, 6890, 3)
 
             # Generate per-vertex uncertainty colourmap
             vertex_var_norm = plt.Normalize(vmin=0.0, vmax=0.2, clip=True)
@@ -299,7 +299,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                 cv2.imwrite(uncropped_vis_save_path, uncropped_rgb_with_background[:, :, ::-1])
 
             if visualise_samples:
-                samples_rows = 4
+                samples_rows = 3
                 samples_cols = 6
                 samples_fig = np.zeros((samples_rows * visualise_wh, samples_cols * visualise_wh, 3),
                                        dtype=body_vis_rgb.dtype)
