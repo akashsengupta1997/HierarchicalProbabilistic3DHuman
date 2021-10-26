@@ -44,7 +44,7 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git@v0.3.0"
 ### Model files
 You will need to download the SMPL model. The [neutral model](http://smplify.is.tue.mpg.de) is required for training and running the demo code. If you want to evaluate the model on datasets with gendered SMPL labels (such as 3DPW and SSP-3D), the male and female models are available [here](http://smpl.is.tue.mpg.de). You will need to convert the SMPL model files to be compatible with python3 by removing any chumpy objects. To do so, please follow the instructions [here](https://github.com/vchoutas/smplx/tree/master/tools).
 
-Download pre-trained model checkpoints for our 3D Shape/Pose network, as well as for 2D Pose [HRnet-W48](https://github.com/leoxiaobin/deep-high-resolution-net.pytorch) from [here](https://drive.google.com/drive/folders/1WHdbAaPM8-FpnwMuCdVEchskgKab3gel?usp=sharing). 
+Download pre-trained model checkpoints for our 3D Shape/Pose network, as well as for 2D Pose [HRNet-W48](https://github.com/leoxiaobin/deep-high-resolution-net.pytorch) from [here](https://drive.google.com/drive/folders/1WHdbAaPM8-FpnwMuCdVEchskgKab3gel?usp=sharing). 
 
 Place the SMPL model files and network checkpoints in the `model_files` directory, which should have the following structure. If the files are placed elsewhere, you will need to update `configs/paths.py` accordingly.
 
@@ -76,3 +76,15 @@ Inference can be slow due to the rejection sampling procedure used to estimate p
 - Evaluation Code for [3DPW](https://virtualhumans.mpi-inf.mpg.de/3DPW/) and [SSP-3D](https://github.com/akashsengupta1997/SSP-3D)
 - Gendered pre-trained models for improved shape estimation
 - Weaknesses and future research
+
+## Acknowledgments
+Code was adapted from/influenced by the following repos - thanks to the authors!
+
+- [HMR](https://github.com/akanazawa/hmr)
+- [SPIN](https://github.com/nkolot/SPIN)
+- [VIBE](https://github.com/mkocabas/VIBE)
+- [HRNet](https://github.com/leoxiaobin/deep-high-resolution-net.pytorch)
+- [PyTorch3D](https://github.com/facebookresearch/pytorch3d)
+- [Probabilistic Orientation Estimation with Matrix Fisher Distributions](https://github.com/Davmo049/Public_prob_orientation_estimation_with_matrix_fisher_distributions)
+- [CannyEdgePytorch](https://github.com/DCurro/CannyEdgePytorch)
+- [Matrix-Fisher-Distribution](https://github.com/tylee-fdcl/Matrix-Fisher-Distribution)
