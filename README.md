@@ -5,6 +5,8 @@ ICCV 2021
 
 This is the official code repository of the above paper, which takes a probabilistic approach to 3D human shape and pose estimation and predicts multiple plausible 3D reconstruction samples given an input image. 
 
+![teaser](teaser.gif)
+
 This repository contains inference, training (TODO) and evaluation (TODO) code. A few weaknesses of this approach, and future research directions, are listed below (TODO).
 If you find this code useful in your research, please cite the following publication:
 ```
@@ -16,8 +18,6 @@ If you find this code useful in your research, please cite the following publica
                year = {2021}                         
 }
 ```
-
-![teaser](teaser.gif)
 
 ## Installation
 
