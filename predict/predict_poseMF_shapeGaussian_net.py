@@ -21,11 +21,11 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                                      smpl_model,
                                      hrnet_model,
                                      hrnet_config,
-                                     object_detect_model,
                                      edge_detect_model,
                                      device,
                                      image_dir,
                                      save_dir,
+                                     object_detect_model=None,
                                      joints2Dvisib_threshold=0.75,
                                      visualise_wh=512,
                                      visualise_uncropped=True,
@@ -52,8 +52,9 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
     fixed_orthographic_scale = torch.tensor([[0.95, 0.95]], device=device)
 
     hrnet_model.eval()
-    object_detect_model.eval()
     pose_shape_model.eval()
+    if object_detect_model is not None:
+        object_detect_model.eval()
     for image_fname in tqdm(sorted([f for f in os.listdir(image_dir) if f.endswith(('.jpg', '.png'))])):
         with torch.no_grad():
             # ------------------------- INPUT LOADING AND PROXY REPRESENTATION GENERATION -------------------------

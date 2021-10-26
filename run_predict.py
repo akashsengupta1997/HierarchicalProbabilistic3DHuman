@@ -19,13 +19,17 @@ from predict.predict_poseMF_shapeGaussian_net import predict_poseMF_shapeGaussia
 def run_predict(device,
                 image_dir,
                 save_dir,
+                already_cropped_images=False,
                 visualise_samples=False,
                 visualise_uncropped=False,
                 joints2Dvisib_threshold=0.75):
 
     # ------------------------- Load Models -------------------------
-    # Bounding box / Object detection model
-    object_detect_model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).to(device)
+    if not already_cropped_images:
+        # Bounding box / Object detection model
+        object_detect_model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True).to(device)
+    else:
+        object_detect_model = None
 
     # HRNet model for 2D joint detection
     hrnet_model = PoseHighResolutionNet(pose2D_hrnet_config).to(device)
@@ -60,11 +64,11 @@ def run_predict(device,
                                      smpl_model=smpl_model,
                                      hrnet_model=hrnet_model,
                                      hrnet_config=pose2D_hrnet_config,
-                                     object_detect_model=object_detect_model,
                                      edge_detect_model=edge_detect_model,
                                      device=device,
                                      image_dir=image_dir,
                                      save_dir=save_dir,
+                                     object_detect_model=object_detect_model,
                                      joints2Dvisib_threshold=joints2Dvisib_threshold,
                                      visualise_uncropped=visualise_uncropped,
                                      visualise_samples=visualise_samples)
@@ -74,6 +78,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_dir', '-I', type=str)
     parser.add_argument('--save_dir', '-S', type=str)
+    parser.add_argument('--cropped_images', '-C', action='store_true', help='Images already cropped and centred.')
     parser.add_argument('--visualise_samples', '-VS', action='store_true')
     parser.add_argument('--visualise_uncropped', '-VU', action='store_true')
     parser.add_argument('--joints2Dvisib_threshold', '-T', type=float, default=0.75)
@@ -91,6 +96,7 @@ if __name__ == '__main__':
     run_predict(device=device,
                 image_dir=args.image_dir,
                 save_dir=args.save_dir,
+                already_cropped_images=args.cropped_images,
                 visualise_samples=args.visualise_samples,
                 visualise_uncropped=args.visualise_uncropped,
                 joints2Dvisib_threshold=args.joints2Dvisib_threshold)
