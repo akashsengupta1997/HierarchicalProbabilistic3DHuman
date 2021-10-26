@@ -45,6 +45,7 @@ def predict_hrnet(hrnet_model,
     :return: bbox_centre, bbox_height, bbox_width: bounding box centre, height and width
 
     """
+    image_height, image_width = image.shape[1:]
     if object_detect_model is not None:
         # Detecting object bounding boxes in input image
         # Bounding boxes are in (hor, vert) coordinates
@@ -58,7 +59,6 @@ def predict_hrnet(hrnet_model,
         # Convert box corners to (centre, height, width) and select centre-most person box
         all_pred_centres, all_pred_heights, all_pred_widths = convert_bbox_corners_to_centre_hw_torch(
             bbox_corners=pred_human_boxes[:, [1, 0, 3, 2]])  # Use (vert, hor) coordinates
-        image_height, image_width = image.shape[1:]
         if pred_human_boxes.shape[0] > 1:
             centre_dists = (all_pred_centres[:, 0] - image_height/2.0) ** 2 + (all_pred_centres[:, 1] - image_width/2.0) ** 2
             pred_centre = all_pred_centres[torch.argmin(centre_dists), :]
@@ -72,12 +72,12 @@ def predict_hrnet(hrnet_model,
             except IndexError:
                 print("Could not find person bounding box - using entire image!")
                 pred_centre = torch.tensor(image.shape[1:], device=image.device, dtype=torch.float32) * 0.5
-                pred_height = torch.tensor(image.shape[1], device=image.device, dtype=torch.float32)
-                pred_width = torch.tensor(image.shape[2], device=image.device, dtype=torch.float32)
+                pred_height = torch.tensor(image_height, device=image.device, dtype=torch.float32)
+                pred_width = torch.tensor(image_width, device=image.device, dtype=torch.float32)
     else:
         pred_centre = torch.tensor(image.shape[1:], device=image.device, dtype=torch.float32) * 0.5
-        pred_height = torch.tensor(image.shape[1], device=image.device, dtype=torch.float32)
-        pred_width = torch.tensor(image.shape[2], device=image.device, dtype=torch.float32)
+        pred_height = torch.tensor(image_height, device=image.device, dtype=torch.float32)
+        pred_width = torch.tensor(image_width, device=image.device, dtype=torch.float32)
 
     # Convert box to be same aspect ratio as HrNet input
     aspect_ratio = float(hrnet_config.MODEL.IMAGE_SIZE[1]) / float(hrnet_config.MODEL.IMAGE_SIZE[0])
