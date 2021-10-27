@@ -1,15 +1,14 @@
 import numpy as np
 import os
-import torch
 
-import config
 from utils.eval_utils import procrustes_analysis_batch, scale_and_translation_transform_batch
-from utils.local_shape_utils import add_symmetric_measurements, remove_symmetric_measurements_torch, get_measurements_from_vertices
 
 
 class EvalMetricsTracker:
     """
     Tracks metrics during evaluation.
+    Metric types:
+        - PVE: per vertex 3D error
     """
     def __init__(self, metrics_to_track, img_wh=None, save_path=None,
                  save_per_frame_metrics=False):
@@ -39,13 +38,6 @@ class EvalMetricsTracker:
             elif metric_type == 'joints2Dsamples_l2es':
                 self.metric_sums['num_vis_joints2Dsamples'] = 0.
                 self.metric_sums[metric_type] = 0.
-            elif metric_type == 'measurements_mae':
-                for measure in config.METAIL_MEASUREMENTS:
-                    self.metric_sums[measure] = 0.
-            elif metric_type == 'smpl_measurements_mae':
-                for measure in config.ALL_MEAS_NAMES_NO_SYMM:
-                    self.metric_sums[measure] = 0.
-                self.metric_sums['smpl_meas_error_all'] = 0.
             else:
                 self.metric_sums[metric_type] = 0.
 
@@ -126,18 +118,6 @@ class EvalMetricsTracker:
                 transformed_points_return_dict['pred_reposed_vertices_sc'] = pred_reposed_vertices_sc
             if return_per_frame_metrics:
                 per_frame_metrics_return_dict['pve-ts_sc'] = np.mean(pvet_sc_batch, axis=-1)
-
-        # Reposed + Procrustes analysis - this doesn't make practical sense for reposed.
-        if 'pve-ts_pa' in self.metrics_to_track:
-            pred_reposed_vertices = pred_dict['reposed_verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
-            target_reposed_vertices = target_dict['reposed_verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
-            pred_reposed_vertices_pa = procrustes_analysis_batch(pred_reposed_vertices,
-                                                                 target_reposed_vertices)
-            pvet_pa_batch = np.linalg.norm(pred_reposed_vertices_pa - target_reposed_vertices, axis=-1)  # (bsize, 6890) or (num views, 6890)
-            self.metric_sums['pve-ts_pa'] += np.sum(pvet_pa_batch)  # scalar
-            self.per_frame_metrics['pve-ts_pa'].append(np.mean(pvet_pa_batch, axis=-1))  # (bs,)
-            if return_transformed_points:
-                transformed_points_return_dict['pred_reposed_vertices_pa'] = pred_reposed_vertices_pa
 
         if 'mpjpes' in self.metrics_to_track:
             mpjpe_batch = np.linalg.norm(pred_dict['joints3D'] - target_dict['joints3D'], axis=-1)  # (bsize, 14) or (num views, 14)
@@ -266,14 +246,6 @@ class EvalMetricsTracker:
             self.metric_sums['mpjpes_pa_samples_min'] += np.sum(mpjpe_pa_samples_min_batch)  # scalar
             self.per_frame_metrics['mpjpes_pa_samples_min'].append(np.mean(mpjpe_pa_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
-        if 'pose_mses' in self.metrics_to_track:
-            self.metric_sums['pose_mses'] += np.sum((pred_dict['pose_params_rot_matrices'] -
-                                                     target_dict['pose_params_rot_matrices']) ** 2)
-
-        if 'shape_mses' in self.metrics_to_track:
-            self.metric_sums['shape_mses'] += np.sum((pred_dict['shape_params'] -
-                                                      target_dict['shape_params']) ** 2)
-
         if 'joints2D_l2es' in self.metrics_to_track:
             pred_joints2D_coco = pred_dict['joints2D']  # (bsize, 17, 2) or (num views, 17, 2)
             target_joints2D_coco = target_dict['joints2D']  # (bsize, 17, 2) or (num views, 17, 2)
@@ -333,61 +305,12 @@ class EvalMetricsTracker:
             self.metric_sums['num_samples_true_negatives'] += np.sum(num_tn)
             self.metric_sums['num_samples_false_negatives'] += np.sum(num_fn)
 
-        if 'measurements_mae' in self.metrics_to_track:
-            error_dict = {}
-            for measure in config.METAIL_MEASUREMENTS:
-                error = pred_dict['measurements'][measure] - target_dict['measurements'][measure]
-                self.metric_sums[measure] += np.abs(error)
-                error_dict[measure] = error
-            if return_per_frame_metrics:
-                per_frame_metrics_return_dict['measurements'] = error_dict
-
-        if 'smpl_measurements_mae' in self.metrics_to_track:
-            target_reposed_vertices = target_dict['reposed_verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
-            target_reposed_joints = target_dict['reposed_joints']  # (bsize, 90, 3) or (num views, 90, 3)
-            pred_reposed_vertices = pred_dict['reposed_verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
-            pred_reposed_joints = pred_dict['reposed_joints']  # (bsize, 90, 3) or (num views, 90, 3)
-            pred_reposed_vertices_sc = scale_and_translation_transform_batch(pred_reposed_vertices,
-                                                                             target_reposed_vertices)
-            pred_reposed_joints_sc = scale_and_translation_transform_batch(pred_reposed_joints,
-                                                                           target_reposed_joints)
-
-            target_joint_length_meas, target_vertex_length_meas, target_vertex_circum_meas = get_measurements_from_vertices(vertices=torch.from_numpy(target_reposed_vertices),
-                                                                                                                            joints_all=torch.from_numpy(target_reposed_joints))
-            target_measurements = torch.cat([target_joint_length_meas,
-                                             target_vertex_length_meas,
-                                             target_vertex_circum_meas],
-                                            dim=-1)
-            target_measurements = remove_symmetric_measurements_torch(target_meas=target_measurements,
-                                                                      target_meas_names=config.ALL_MEAS_NAMES,
-                                                                      combine_using='mean').cpu().detach().numpy()
-
-            pred_joint_length_meas, pred_vertex_length_meas, pred_vertex_circum_meas = get_measurements_from_vertices(vertices=torch.from_numpy(pred_reposed_vertices_sc),
-                                                                                                                      joints_all=torch.from_numpy(pred_reposed_joints_sc))
-            pred_measurements = torch.cat([pred_joint_length_meas,
-                                           pred_vertex_length_meas,
-                                           pred_vertex_circum_meas],
-                                          dim=-1)
-            pred_measurements = remove_symmetric_measurements_torch(target_meas=pred_measurements,
-                                                                    target_meas_names=config.ALL_MEAS_NAMES,
-                                                                    combine_using='mean').cpu().detach().numpy()
-
-            error_dict = {}
-            for i, measure in enumerate(config.ALL_MEAS_NAMES_NO_SYMM):
-                # error = pred_dict['smpl_measurements'][:, i] - target_dict['smpl_measurements'][:, i]  # (bsize, )
-                error = target_measurements[:, i] - pred_measurements[:, i]
-                self.metric_sums[measure] += np.sum(np.abs(error))  # scalar
-                error_dict[measure] = error
-            # self.metric_sums['smpl_meas_error_all'] += np.sum(np.abs(pred_dict['smpl_measurements'] - target_dict['smpl_measurements']))
-            self.metric_sums['smpl_meas_error_all'] += np.sum(np.abs(target_measurements - pred_measurements))
-            if return_per_frame_metrics:
-                per_frame_metrics_return_dict['smpl_measurements'] = error_dict
-
         return transformed_points_return_dict, per_frame_metrics_return_dict
 
     def compute_final_metrics(self):
         final_metrics = {}
         for metric_type in self.metrics_to_track:
+            mult = 1.
             if metric_type == 'silhouette_ious':
                 iou = self.metric_sums['num_true_positives'] / \
                       (self.metric_sums['num_true_positives'] +
@@ -403,37 +326,21 @@ class EvalMetricsTracker:
             elif metric_type == 'joints2Dsamples_l2es':
                 joints2Dsamples_l2e = self.metric_sums['joints2Dsamples_l2es'] / self.metric_sums['num_vis_joints2Dsamples']
                 final_metrics[metric_type] = joints2Dsamples_l2e
-            elif metric_type == 'measurements_mae':
-                for measure in config.METAIL_MEASUREMENTS:
-                    final_metrics[measure] = self.metric_sums[measure] / self.total_samples
-            elif metric_type == 'smpl_measurements_mae':
-                for measure in config.ALL_MEAS_NAMES_NO_SYMM:
-                    final_metrics[measure] = self.metric_sums[measure] / self.total_samples
-                final_metrics['smpl_meas_error_all'] = self.metric_sums['smpl_meas_error_all'] / (self.total_samples * 23)
             else:
                 if 'pve' in metric_type:
                     num_per_sample = 6890
+                    mult = 1000.  # mult used to convert 3D metrics from metres to millimetres
                 elif 'mpjpe' in metric_type:
                     num_per_sample = 14
+                    mult = 1000.
                 elif 'joints2D_' in metric_type:
                     num_per_sample = 17
-                elif 'shape_mse' in metric_type:
-                    num_per_sample = 10
-                elif 'pose_mse' in metric_type:
-                    num_per_sample = 24 * 3 * 3
-
-                print(metric_type, num_per_sample, self.total_samples)
                 final_metrics[metric_type] = self.metric_sums[metric_type] / (self.total_samples * num_per_sample)
-        for metric in final_metrics.keys():
-            if final_metrics[metric] > 0.3:
-                mult = 1
-            else:
-                mult = 1000
-            print(metric, '{:.2f}'.format(final_metrics[metric]*mult))  # Converting from metres to millimetres
+
+            print(metric_type, '{:.2f}'.format(final_metrics[metric_type] * mult))
+
         if self.save_per_frame_metrics:
             for metric_type in self.metrics_to_track:
                 if 'samples' not in metric_type and 'measurements' not in metric_type:
                     per_frame = np.concatenate(self.per_frame_metrics[metric_type], axis=0)
-                    # TODO printing for debugging - remove later
-                    print(metric_type, per_frame.shape)
                     np.save(os.path.join(self.save_path, metric_type+'_per_frame.npy'), per_frame)

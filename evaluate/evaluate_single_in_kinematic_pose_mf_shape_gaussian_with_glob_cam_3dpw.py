@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from smplx.lbs import batch_rodrigues
 
+from configs import paths
+
 from models.smpl_official import SMPL
 
 from metrics.eval_metrics_tracker import EvalMetricsTracker
@@ -21,7 +23,6 @@ def evaluate_pose_MF_shapeGaussian_with_glob_cam_3dpw(model,
                                                       save_path,
                                                       num_workers=4,
                                                       pin_memory=True,
-                                                      visualise=True,
                                                       save_per_frame_metrics=True,
                                                       edge_detector=None,
                                                       edge_nms=False,
@@ -41,9 +42,9 @@ def evaluate_pose_MF_shapeGaussian_with_glob_cam_3dpw(model,
                                  num_workers=num_workers,
                                  pin_memory=pin_memory)
 
-    smpl = SMPL(config.SMPL_300_MODEL_DIR, batch_size=1, num_betas=num_smpl_betas)
-    smpl_male = SMPL(config.SMPL_300_MODEL_DIR, batch_size=1, gender='male', num_betas=10)
-    smpl_female = SMPL(config.SMPL_300_MODEL_DIR, batch_size=1, gender='female', num_betas=10)
+    smpl = SMPL(paths.SMPL, batch_size=1, num_betas=num_smpl_betas)
+    smpl_male = SMPL(paths.SMPL, batch_size=1, gender='male', num_betas=10)
+    smpl_female = SMPL(paths.SMPL, batch_size=1, gender='female', num_betas=10)
     smpl.to(device)
     smpl_male.to(device)
     smpl_female.to(device)
@@ -167,11 +168,11 @@ def evaluate_pose_MF_shapeGaussian_with_glob_cam_3dpw(model,
                 pred_dict['reposed_verts_samples'] = pred_reposed_vertices_samples.cpu().detach().numpy()
                 pred_dict['joints3D_samples'] = pred_joints_h36mlsp_samples.cpu().detach().numpy()
 
-            transformed_points, per_frame_metrics = metrics_tracker.update_per_batch(pred_dict,
-                                                                                     target_dict,
-                                                                                     1,
-                                                                                     return_transformed_points=visualise,
-                                                                                     return_per_frame_metrics=visualise)
+            metrics_tracker.update_per_batch(pred_dict,
+                                             target_dict,
+                                             1,
+                                             return_transformed_points=False,
+                                             return_per_frame_metrics=False)
             if save_per_frame_metrics:
                 fname_per_frame.append(fname)
                 pose_per_frame.append(np.concatenate([pred_glob_rotmats[:, None, :, :].cpu().detach().numpy(),

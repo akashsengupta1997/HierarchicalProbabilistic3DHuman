@@ -1,4 +1,3 @@
-wheel
 opencv-python
 tqdm
 matplotlib
