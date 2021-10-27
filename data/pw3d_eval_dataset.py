@@ -10,13 +10,11 @@ from utils.label_conversions import convert_2Djoints_to_gaussian_heatmaps
 class PW3DEvalDataset(Dataset):
     def __init__(self,
                  pw3d_dir_path,
-                 img_wh,
-                 hmaps_gaussian_std=4,
+                 config,
                  visible_joints_threshold=None):
         super(PW3DEvalDataset, self).__init__()
 
         self.cropped_frames_dir = os.path.join(pw3d_dir_path, 'cropped_frames')
-        self.keypoints_dir = os.path.join(pw3d_dir_path, 'hrnet_results_centred', 'keypoints')
 
         data = np.load(os.path.join(pw3d_dir_path, '3dpw_test.npz'))
         self.frame_fnames = data['imgname']
@@ -24,8 +22,10 @@ class PW3DEvalDataset(Dataset):
         self.shape = data['shape']
         self.gender = data['gender']
 
-        self.img_wh = img_wh
-        self.hmaps_gaussian_std = hmaps_gaussian_std
+        self.keypoints = np.load(os.path.join(pw3d_dir_path, 'hrnet_results_centred.npy'))
+
+        self.img_wh = config.DATA.PROXY_REP_SIZE
+        self.hmaps_gaussian_std = config.DATA.HEATMAP_GAUSSIAN_STD
         self.visible_joints_threshold = visible_joints_threshold
 
     def __len__(self):
@@ -38,16 +38,14 @@ class PW3DEvalDataset(Dataset):
         # ---------------------- Inputs ----------------------
         fname = self.frame_fnames[index]
         cropped_frame_path = os.path.join(self.cropped_frames_dir, fname)
-        keypoints_path = os.path.join(self.keypoints_dir,
-                                      os.path.splitext(fname)[0] + '.npy')
 
-        image_in = cv2.cvtColor(cv2.imread(cropped_frame_path), cv2.COLOR_BGR2RGB)
-        orig_height, orig_width = image_in.shape[:2]
+        image = cv2.cvtColor(cv2.imread(cropped_frame_path), cv2.COLOR_BGR2RGB)
+        orig_height, orig_width = image.shape[:2]
         assert (orig_height == orig_width), "Resizing non-square image to square will cause unwanted stretching/squeezing!"
-        image_in = cv2.resize(image_in, (self.img_wh, self.img_wh), interpolation=cv2.INTER_LINEAR)
-        image_in = np.transpose(image_in, [2, 0, 1]) / 255.0
+        image = cv2.resize(image, (self.img_wh, self.img_wh), interpolation=cv2.INTER_LINEAR)
+        image = np.transpose(image, [2, 0, 1]) / 255.0
 
-        keypoints = np.load(keypoints_path)
+        keypoints = self.keypoints[index]
         keypoints_confidence = keypoints[:, 2]  # (17,)
         keypoints = keypoints[:, :2]
         keypoints = keypoints * np.array([self.img_wh / float(orig_width),
@@ -59,19 +57,20 @@ class PW3DEvalDataset(Dataset):
             keypoints_visiblity_flag = keypoints_confidence > self.visible_joints_threshold
             keypoints_visiblity_flag[[0, 1, 2, 3, 4, 5, 6, 11, 12]] = True  # Only removing joints [7, 8, 9, 10, 13, 14, 15, 16] if occluded
             heatmaps = heatmaps * keypoints_visiblity_flag[None, None, :]
-
-        input = np.concatenate([image_in, heatmaps.transpose([2, 0, 1])], axis=0)
+        heatmaps = np.transpose(heatmaps, [2, 0, 1])
 
         # ---------------------- Targets ----------------------
         pose = self.pose[index]
         shape = self.shape[index]
         gender = self.gender[index]
 
-        input = torch.from_numpy(input).float()
+        image = torch.from_numpy(image).float()
+        heatmaps = torch.from_numpy(heatmaps).float()
         pose = torch.from_numpy(pose).float()
         shape = torch.from_numpy(shape).float()
 
-        return {'input': input,
+        return {'image': image,
+                'heatmaps': heatmaps,
                 'pose': pose,
                 'shape': shape,
                 'fname': fname,

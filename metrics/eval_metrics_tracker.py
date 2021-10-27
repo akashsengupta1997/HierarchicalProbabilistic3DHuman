@@ -7,8 +7,27 @@ from utils.eval_utils import procrustes_analysis_batch, scale_and_translation_tr
 class EvalMetricsTracker:
     """
     Tracks metrics during evaluation.
-    Metric types:
-        - PVE: per vertex 3D error
+    Mode metric types:
+        - PVE: 
+            - Per vertex 3D position error (L2 norm in millimetres) (should really rename this to MPVPE)
+        - PVE-T: 
+            - Per vertex 3D position error in the T-pose/neutral pose i.e. body shape error (L2 norm in millimetres)
+        - MPJPE: 
+            - Per joint 3D position error (L2 norm in millimetres)
+        - Joints2D L2E: 
+            - Per joint 2D position error after projection to image plane (L2 norm in pixels)
+            - If the visibility of target 2D joint is provided, this metric will be computed using only visible targets
+        - Silhouette IOU:
+            - Silhouette intersection over union
+    Sample metric Types:
+        - PVE/PVE-T/MPJPE Samples Minimum:
+            - Minimum 3D position error out of N samples obtained from shape/pose distribution.
+        - Joints2D Samples L2E:
+            - Mean per joint 2D position error over N samples obtained from shape/pose distribution.
+            - All 2D samples from predicted 3D distribution should match 2D target joints.
+        - Silhouette samples IOU
+            - Mean silhouette IOU over N samples obtained from shape/pose distribution.
+            - All 2D samples from predicted 3D distribution should match 2D target silhouette.
     """
     def __init__(self, metrics_to_track, img_wh=None, save_path=None,
                  save_per_frame_metrics=False):

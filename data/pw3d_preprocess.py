@@ -204,11 +204,9 @@ def pw3d_eval_extract(dataset_path, out_path, crop_wh=512):
                     poses_.append(pose)
                     shapes_.append(shape)
                     genders_.append(gender)
-                    print(cropped_image_fname, shape.shape, pose.shape, center, wh, gender)
+                    # print(cropped_image_fname, shape.shape, pose.shape, center, wh, gender)
 
     # Store all data in npz file.
-    if not os.path.isdir(out_path):
-        os.makedirs(out_path)
     out_file = os.path.join(out_path, '3dpw_test.npz')
     np.savez(out_file, imgname=cropped_frame_fnames_,
              center=centers_,
@@ -221,7 +219,6 @@ def pw3d_eval_extract(dataset_path, out_path, crop_wh=512):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str)
-    parser.add_argument('--out_path', type=str)
     args = parser.parse_args()
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
@@ -229,5 +226,8 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print('\nDevice: {}'.format(device))
 
-    pw3d_eval_extract(args.dataset_path, args.out_path)
+    out_path = os.path.join(args.dataset_path, 'test')
+    if not os.path.isdir(out_path):
+        os.makedirs(os.path.join(out_path, 'cropped_frames'))
+    pw3d_eval_extract(args.dataset_path, out_path)
 

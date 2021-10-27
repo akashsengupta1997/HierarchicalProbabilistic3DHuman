@@ -11,11 +11,8 @@ from utils.image_utils import batch_crop_opencv_affine
 class SSP3DEvalDataset(Dataset):
     def __init__(self,
                  ssp3d_dir_path,
-                 img_wh,
-                 hmaps_gaussian_std=4,
-                 bbox_scale_factor=1.2,
-                 visible_joints_threshold=None,
-                 vis_img_wh=512):
+                 config,
+                 visible_joints_threshold=None):
         super(SSP3DEvalDataset, self).__init__()
 
         self.images_dir = os.path.join(ssp3d_dir_path, 'images')
@@ -30,11 +27,10 @@ class SSP3DEvalDataset(Dataset):
         self.bbox_whs = data['bbox_whs']  # Tight bounding box width/height
         self.genders = data['genders']
 
-        self.img_wh = img_wh
-        self.hmaps_gaussian_std = hmaps_gaussian_std
-        self.bbox_scale_factor = bbox_scale_factor
+        self.img_wh = config.DATA.PROXY_REP_SIZE
+        self.hmaps_gaussian_std = config.DATA.HEATMAP_GAUSSIAN_STD
+        self.bbox_scale_factor = config.DATA.BBOX_SCALE_FACTOR
         self.visible_joints_threshold = visible_joints_threshold
-        self.vis_img_wh = vis_img_wh
 
     def __len__(self):
         return len(self.frame_fnames)
@@ -46,7 +42,7 @@ class SSP3DEvalDataset(Dataset):
         # ------------------ Inputs ------------------
         fname = self.frame_fnames[index]
         image_path = os.path.join(self.images_dir, fname)
-        image_in = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
         keypoints = np.copy(self.keypoints[index])
         keypoints_conf = keypoints[:, 2]  # (17,)
 
@@ -55,12 +51,13 @@ class SSP3DEvalDataset(Dataset):
         bbox_wh = self.bbox_whs[index]
         crop_outputs = batch_crop_opencv_affine(output_wh=(self.img_wh, self.img_wh),
                                                 num_to_crop=1,
-                                                rgb=image_in[None].transpose(0, 3, 1, 2),
+                                                rgb=image[None].transpose(0, 3, 1, 2),
                                                 joints2D=keypoints[None, :, :2],
                                                 bbox_centres=bbox_centre[None],
                                                 bbox_whs=[bbox_wh],
                                                 orig_scale_factor=self.bbox_scale_factor)['joints2D'][0]
-        image_in = crop_outputs['rgb'][0] / 255.0
+        image = crop_outputs['rgb'][0] / 255.0
+
         keypoints = crop_outputs['joints2D'][0]
         heatmaps = convert_2Djoints_to_gaussian_heatmaps(keypoints.astype(np.int16), self.img_wh,
                                                          std=self.hmaps_gaussian_std)
@@ -68,8 +65,7 @@ class SSP3DEvalDataset(Dataset):
             keypoints_visibility_flag = keypoints_conf > self.visible_joints_threshold
             keypoints_visibility_flag[[0, 1, 2, 3, 4, 5, 6, 11, 12]] = True  # Only removing joints [7, 8, 9, 10, 13, 14, 15, 16] if occluded
             heatmaps = heatmaps * keypoints_visibility_flag[None, None, :]
-
-        input = np.concatenate([image_in, heatmaps.transpose([2, 0, 1])], axis=0)
+        heatmaps = np.transpose(heatmaps, [2, 0, 1])
 
         # ------------------ Targets ------------------
         shape = self.body_shapes[index]
@@ -82,23 +78,16 @@ class SSP3DEvalDataset(Dataset):
                                               bbox_centres=bbox_centre[None],
                                               bbox_whs=[bbox_wh],
                                               orig_scale_factor=self.bbox_scale_factor)['seg'][0]
-        input = torch.from_numpy(input).float()
+
+        image = torch.from_numpy(image).float()
+        heatmaps = torch.from_numpy(heatmaps).float()
         shape = torch.from_numpy(shape).float()
         pose = torch.from_numpy(pose).float()
 
-        # ------------------ Visuals ------------------
-        vis_img = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)  # actually an image not a mask
-        vis_img = batch_crop_opencv_affine(output_wh=(self.vis_img_wh, self.vis_img_wh),
-                                           num_to_crop=1,
-                                           rgb=vis_img[None].transpose(0, 3, 1, 2),
-                                           bbox_centres=bbox_centre[None],
-                                           bbox_whs=[bbox_wh],
-                                           orig_scale_factor=self.bbox_scale_factor)['rgb'][0].transpose(1, 2, 0) / 255.0
-
-        return {'input': input,
+        return {'image': image,
+                'heatmaps': heatmaps,
                 'shape': shape,
                 'pose': pose,
-                'vis_img': vis_img,
                 'silhouette': silhouette,
                 'keypoints': keypoints,
                 'fname': fname,
