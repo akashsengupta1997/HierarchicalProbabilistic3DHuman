@@ -66,11 +66,9 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
             # ------------------ INPUTS ------------------
             image = samples_batch['image'].to(device)
             heatmaps = samples_batch['heatmaps'].to(device)
-            print(image.shape, heatmaps.shape)
             edge_detector_output = edge_detect_model(image)
             proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_config.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
             proxy_rep_input = torch.cat([proxy_rep_img, heatmaps], dim=1)
-            print(proxy_rep_input.shape)
 
             # ------------------ Targets ------------------
             target_pose = samples_batch['pose'].to(device)
