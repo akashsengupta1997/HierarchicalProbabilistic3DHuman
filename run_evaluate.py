@@ -33,7 +33,7 @@ def run_evaluate(device,
     smpl_model_male = SMPL(paths.SMPL,
                            batch_size=1,
                            gender='male').to(device)
-    smpl_model_female = SMPL(config.SMPL_MODEL_DIR,
+    smpl_model_female = SMPL(paths.SMPL,
                              batch_size=1,
                              gender='female').to(device)
 
