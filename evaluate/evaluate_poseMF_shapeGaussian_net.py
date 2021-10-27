@@ -206,10 +206,6 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                     pred_silhouette_samples = torch.stack(pred_silhouette_samples, dim=1)  # (1, num samples, img wh, img wh)
 
             # ------------------------------- TRACKING METRICS -------------------------------
-            pred_joints2d_coco_mode = pred_joints2d_coco_mode.cpu().detach().numpy()
-            if 'silhouette_ious' in metrics:
-                pred_silhouette_mode = pred_silhouette_mode.cpu().detach().numpy()
-
             pred_dict = {'verts': pred_vertices_mode.cpu().detach().numpy(),
                          'reposed_verts': pred_reposed_vertices_mean.cpu().detach().numpy(),
                          'joints3D': pred_joints_h36mlsp_mode.cpu().detach().numpy()}
