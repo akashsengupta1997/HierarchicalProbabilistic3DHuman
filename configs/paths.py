@@ -12,5 +12,5 @@ HRNET_WEIGHTS = './model_files/pose_hrnet_w48_384x288.pth'
 POSE_SHAPE_NET_WEIGHTS = './model_files/poseMF_shapeGaussian_net_weights.tar'
 
 # ------------------------- Eval Datasets -------------------------
-PW3D_PATH = ''
-SSP3D_PATH = ''
+PW3D_PATH = '/scratch2/as2562/datasets/3DPW/test'
+SSP3D_PATH = '/scratch2/as2562/datasets/ssp_3d'
