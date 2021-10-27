@@ -55,7 +55,7 @@ class SSP3DEvalDataset(Dataset):
                                                 joints2D=keypoints[None, :, :2],
                                                 bbox_centres=bbox_centre[None],
                                                 bbox_whs=[bbox_wh],
-                                                orig_scale_factor=self.bbox_scale_factor)['joints2D'][0]
+                                                orig_scale_factor=self.bbox_scale_factor)
         image = crop_outputs['rgb'][0] / 255.0
 
         keypoints = crop_outputs['joints2D'][0]
