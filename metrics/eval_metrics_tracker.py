@@ -26,7 +26,7 @@ class EvalMetricsTracker:
             - Mean per joint 2D position error over N samples obtained from shape/pose distribution.
             - All 2D samples from predicted 3D distribution should match 2D target joints.
         - Silhouette samples IOU
-            - Mean silhouette IOU over N samples obtained from shape/pose distribution.
+            - Mean silhouette-IOU over N samples obtained from shape/pose distribution.
             - All 2D samples from predicted 3D distribution should match 2D target silhouette.
     """
     def __init__(self, metrics_to_track, img_wh=None, save_path=None,
@@ -44,17 +44,17 @@ class EvalMetricsTracker:
     def initialise_metric_sums(self):
         self.metric_sums = {}
         for metric_type in self.metrics_to_track:
-            if metric_type == 'silhouette IOU':
+            if metric_type == 'silhouette-IOU':
                 self.metric_sums['num_true_positives'] = 0.
                 self.metric_sums['num_false_positives'] = 0.
                 self.metric_sums['num_true_negatives'] = 0.
                 self.metric_sums['num_false_negatives'] = 0.
-            elif metric_type == 'silhouettesamples IOU':
+            elif metric_type == 'silhouettesamples-IOU':
                 self.metric_sums['num_samples_true_positives'] = 0.
                 self.metric_sums['num_samples_false_positives'] = 0.
                 self.metric_sums['num_samples_true_negatives'] = 0.
                 self.metric_sums['num_samples_false_negatives'] = 0.
-            elif metric_type == 'joints2Dsamples L2E':
+            elif metric_type == 'joints2Dsamples-L2E':
                 self.metric_sums['num_vis_joints2Dsamples'] = 0.
                 self.metric_sums[metric_type] = 0.
             else:
@@ -117,12 +117,12 @@ class EvalMetricsTracker:
                 per_frame_metrics_return_dict['PVE-PA'] = np.mean(pve_pa_batch, axis=-1)
 
         # Reposed
-        if 'pve-ts' in self.metrics_to_track:
+        if 'PVE-T' in self.metrics_to_track:
             pvet_batch = np.linalg.norm(pred_dict['reposed_verts'] - target_dict['reposed_verts'], axis=-1)  # (bsize, 6890) or (num views, 6890)
-            self.metric_sums['pve-ts'] += np.sum(pvet_batch)  # scalar
-            self.per_frame_metrics['pve-ts'].append(np.mean(pvet_batch, axis=-1))  # (bs,)
+            self.metric_sums['PVE-T'] += np.sum(pvet_batch)  # scalar
+            self.per_frame_metrics['PVE-T'].append(np.mean(pvet_batch, axis=-1))  # (bs,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['pve-ts'] = np.mean(pvet_batch, axis=-1)
+                per_frame_metrics_return_dict['PVE-T'] = np.mean(pvet_batch, axis=-1)
 
         # Reposed + Scale and translation correction
         if 'PVE-T-SC' in self.metrics_to_track:
@@ -173,16 +173,16 @@ class EvalMetricsTracker:
             if return_per_frame_metrics:
                 per_frame_metrics_return_dict['MPJPE-PA'] = np.mean(mpjpe_pa_batch, axis=-1)
 
-        if 'pves_samples_min' in self.metrics_to_track:
+        if 'PVE_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pve_per_sample = np.linalg.norm(pred_dict['verts_samples'] - target_dict['verts'], axis=-1)  # (num samples, 6890)
             min_pve_sample = np.argmin(np.mean(pve_per_sample, axis=-1))
             pve_samples_min_batch = pve_per_sample[min_pve_sample]
-            self.metric_sums['pves_samples_min'] += np.sum(pve_samples_min_batch)  # scalar
-            self.per_frame_metrics['pves_samples_min'].append(np.mean(pve_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['PVE_samples_min'] += np.sum(pve_samples_min_batch)  # scalar
+            self.per_frame_metrics['PVE_samples_min'].append(np.mean(pve_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
         # Scale and translation correction
-        if 'pves_sc_samples_min' in self.metrics_to_track:
+        if 'PVE-SC_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pred_vertices_samples = pred_dict['verts_samples']  # (num samples, 6890, 3)
             target_vertices = np.tile(target_dict['verts'], (pred_vertices_samples.shape[0], 1, 1))  # (num samples, 6890, 3)
@@ -190,11 +190,11 @@ class EvalMetricsTracker:
             pve_sc_per_sample = np.linalg.norm(pred_vertices_samples_sc - target_vertices, axis=-1)  # (num samples, 6890)
             min_pve_sc_sample = np.argmin(np.mean(pve_sc_per_sample, axis=-1))
             pve_sc_samples_min_batch = pve_sc_per_sample[min_pve_sc_sample]
-            self.metric_sums['pves_sc_samples_min'] += np.sum(pve_sc_samples_min_batch)  # scalar
-            self.per_frame_metrics['pves_sc_samples_min'].append(np.mean(pve_sc_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['PVE-SC_samples_min'] += np.sum(pve_sc_samples_min_batch)  # scalar
+            self.per_frame_metrics['PVE-SC_samples_min'].append(np.mean(pve_sc_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
         # Procrustes analysis
-        if 'pves_pa_samples_min' in self.metrics_to_track:
+        if 'PVE-PA_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pred_vertices_samples = pred_dict['verts_samples']  # (num samples, 6890, 3)
             target_vertices = np.tile(target_dict['verts'], (pred_vertices_samples.shape[0], 1, 1))  # (num samples, 6890, 3)
@@ -202,21 +202,21 @@ class EvalMetricsTracker:
             pve_pa_per_sample = np.linalg.norm(pred_vertices_samples_pa - target_vertices, axis=-1)  # (num samples, 6890)
             min_pve_pa_sample = np.argmin(np.mean(pve_pa_per_sample, axis=-1))
             pve_pa_samples_min_batch = pve_pa_per_sample[min_pve_pa_sample]
-            self.metric_sums['pves_pa_samples_min'] += np.sum(pve_pa_samples_min_batch)  # scalar
-            self.per_frame_metrics['pves_pa_samples_min'].append(np.mean(pve_pa_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['PVE-PA_samples_min'] += np.sum(pve_pa_samples_min_batch)  # scalar
+            self.per_frame_metrics['PVE-PA_samples_min'].append(np.mean(pve_pa_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
         # Reposed
-        if 'pve-ts_samples_min' in self.metrics_to_track:
+        if 'PVE-T_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pvet_per_sample = np.linalg.norm(pred_dict['reposed_verts_samples'] - target_dict['reposed_verts'],
                                              axis=-1)  # (num samples, 6890)
             min_pvet_sample = np.argmin(np.mean(pvet_per_sample, axis=-1))
             pvet_samples_min_batch = pvet_per_sample[min_pvet_sample]
-            self.metric_sums['pve-ts_samples_min'] += np.sum(pvet_samples_min_batch)  # scalar
-            self.per_frame_metrics['pve-ts_samples_min'].append(np.mean(pvet_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['PVE-T_samples_min'] += np.sum(pvet_samples_min_batch)  # scalar
+            self.per_frame_metrics['PVE-T_samples_min'].append(np.mean(pvet_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
         # Reposed + Scale and translation correction
-        if 'pve-ts_sc_samples_min' in self.metrics_to_track:
+        if 'PVE-T-SC_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pred_reposed_vertices_samples = pred_dict['reposed_verts_samples']  # (num samples, 6890, 3)
             target_reposed_vertices = np.tile(target_dict['reposed_verts'],
@@ -226,19 +226,19 @@ class EvalMetricsTracker:
             pvet_sc_per_sample = np.linalg.norm(pred_reposed_vertices_samples_sc - target_reposed_vertices, axis=-1)  # (num samples, 6890)
             min_pvet_sc_sample = np.argmin(np.mean(pvet_sc_per_sample, axis=-1))
             pvet_sc_samples_min_batch = pvet_sc_per_sample[min_pvet_sc_sample]
-            self.metric_sums['pve-ts_sc_samples_min'] += np.sum(pvet_sc_samples_min_batch)  # scalar
-            self.per_frame_metrics['pve-ts_sc_samples_min'].append(np.mean(pvet_sc_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['PVE-T-SC_samples_min'] += np.sum(pvet_sc_samples_min_batch)  # scalar
+            self.per_frame_metrics['PVE-T-SC_samples_min'].append(np.mean(pvet_sc_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
-        if 'mpjpes_samples_min' in self.metrics_to_track:
+        if 'MPJPE_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             mpjpe_per_sample = np.linalg.norm(pred_dict['joints3D_samples'] - target_dict['joints3D'], axis=-1)  # (num samples, 14))
             min_mpjpe_sample = np.argmin(np.mean(mpjpe_per_sample, axis=-1))
             mpjpe_samples_min_batch = mpjpe_per_sample[min_mpjpe_sample]
-            self.metric_sums['mpjpes_samples_min'] += np.sum(mpjpe_samples_min_batch)  # scalar
-            self.per_frame_metrics['mpjpes_samples_min'].append(np.mean(mpjpe_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['MPJPE_samples_min'] += np.sum(mpjpe_samples_min_batch)  # scalar
+            self.per_frame_metrics['MPJPE_samples_min'].append(np.mean(mpjpe_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
         # Scale and translation correction
-        if 'mpjpes_sc_samples_min' in self.metrics_to_track:
+        if 'MPJPE-SC_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pred_joints3D_h36mlsp_samples = pred_dict['joints3D_samples']  # (num samples, 14, 3)
             target_joints3D_h36mlsp = np.tile(target_dict['joints3D'],
@@ -248,11 +248,11 @@ class EvalMetricsTracker:
             mpjpe_sc_per_sample = np.linalg.norm(pred_joints3D_h36mlsp_sc - target_joints3D_h36mlsp, axis=-1)  # (num samples, 14)
             min_mpjpe_sc_sample = np.argmin(np.mean(mpjpe_sc_per_sample, axis=-1))
             mpjpe_sc_samples_min_batch = mpjpe_sc_per_sample[min_mpjpe_sc_sample]
-            self.metric_sums['mpjpes_sc_samples_min'] += np.sum(mpjpe_sc_samples_min_batch)  # scalar
-            self.per_frame_metrics['mpjpes_sc_samples_min'].append(np.mean(mpjpe_sc_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['MPJPE-SC_samples_min'] += np.sum(mpjpe_sc_samples_min_batch)  # scalar
+            self.per_frame_metrics['MPJPE-SC_samples_min'].append(np.mean(mpjpe_sc_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
         # Procrustes analysis
-        if 'mpjpes_pa_samples_min' in self.metrics_to_track:
+        if 'MPJPE-PA_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
             pred_joints3D_h36mlsp_samples = pred_dict['joints3D_samples']  # (num samples, 14, 3)
             target_joints3D_h36mlsp = np.tile(target_dict['joints3D'],
@@ -262,19 +262,19 @@ class EvalMetricsTracker:
             mpjpe_pa_per_sample = np.linalg.norm(pred_joints3D_h36mlsp_pa - target_joints3D_h36mlsp, axis=-1)  # (num samples, 14)
             min_mpjpe_pa_sample = np.argmin(np.mean(mpjpe_pa_per_sample, axis=-1))
             mpjpe_pa_samples_min_batch = mpjpe_pa_per_sample[min_mpjpe_pa_sample]
-            self.metric_sums['mpjpes_pa_samples_min'] += np.sum(mpjpe_pa_samples_min_batch)  # scalar
-            self.per_frame_metrics['mpjpes_pa_samples_min'].append(np.mean(mpjpe_pa_samples_min_batch, axis=-1))  # (1,) i.e. scalar
+            self.metric_sums['MPJPE-PA_samples_min'] += np.sum(mpjpe_pa_samples_min_batch)  # scalar
+            self.per_frame_metrics['MPJPE-PA_samples_min'].append(np.mean(mpjpe_pa_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
-        if 'joints2D L2E' in self.metrics_to_track:
+        if 'joints2D-L2E' in self.metrics_to_track:
             pred_joints2D_coco = pred_dict['joints2D']  # (bsize, 17, 2) or (num views, 17, 2)
             target_joints2D_coco = target_dict['joints2D']  # (bsize, 17, 2) or (num views, 17, 2)
             joints2D_l2e_batch = np.linalg.norm(pred_joints2D_coco - target_joints2D_coco, axis=-1)  # (bsize, 17) or (num views, 17)
-            self.metric_sums['joints2D L2E'] += np.sum(joints2D_l2e_batch)  # scalar
-            self.per_frame_metrics['joints2D L2E'].append(np.mean(joints2D_l2e_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['joints2D-L2E'] += np.sum(joints2D_l2e_batch)  # scalar
+            self.per_frame_metrics['joints2D-L2E'].append(np.mean(joints2D_l2e_batch, axis=-1))  # (bs,) or (num views,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['joints2D L2E'] = np.mean(joints2D_l2e_batch, axis=-1)
+                per_frame_metrics_return_dict['joints2D-L2E'] = np.mean(joints2D_l2e_batch, axis=-1)
 
-        if 'joints2Dsamples L2E' in self.metrics_to_track:
+        if 'joints2Dsamples-L2E' in self.metrics_to_track:
             pred_joints2D_coco_samples = pred_dict['joints2Dsamples']  # (bsize, num_samples, 17, 2)
             target_joints2D_coco = np.tile(target_dict['joints2D'][:, None, :, :], (1, pred_joints2D_coco_samples.shape[1], 1, 1))  # (bsize, num_samples, 17, 2)
             if 'joints2D_vis' in target_dict.keys():
@@ -285,10 +285,10 @@ class EvalMetricsTracker:
             if 'joints2D_vis' in target_dict.keys():
                 assert joints2Dsamples_l2e_batch.shape[0] == target_joints2d_vis_coco.sum()
             joints2Dsamples_l2e_batch = joints2Dsamples_l2e_batch.reshape(-1)
-            self.metric_sums['joints2Dsamples L2E'] += np.sum(joints2Dsamples_l2e_batch)  # scalar
+            self.metric_sums['joints2Dsamples-L2E'] += np.sum(joints2Dsamples_l2e_batch)  # scalar
             self.metric_sums['num_vis_joints2Dsamples'] += joints2Dsamples_l2e_batch.shape[0]
 
-        if 'silhouette IOU' in self.metrics_to_track:
+        if 'silhouette-IOU' in self.metrics_to_track:
             pred_silhouettes = pred_dict['silhouettes']  # (bsize, img_wh, img_wh) or (num views, img_wh, img_wh)
             target_silhouettes = target_dict['silhouettes']  # (bsize, img_wh, img_wh) or (num views, img_wh, img_wh)
             true_positive = np.logical_and(pred_silhouettes, target_silhouettes)
@@ -304,11 +304,11 @@ class EvalMetricsTracker:
             self.metric_sums['num_true_negatives'] += np.sum(num_tn)
             self.metric_sums['num_false_negatives'] += np.sum(num_fn)
             iou_per_frame = num_tp/(num_tp + num_fp + num_fn)
-            self.per_frame_metrics['silhouette IOU'].append(iou_per_frame)  # (bs,) or (num views,)
+            self.per_frame_metrics['silhouette-IOU'].append(iou_per_frame)  # (bs,) or (num views,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['silhouette IOU'] = iou_per_frame
+                per_frame_metrics_return_dict['silhouette-IOU'] = iou_per_frame
 
-        if 'silhouettesamples IOU' in self.metrics_to_track:
+        if 'silhouettesamples-IOU' in self.metrics_to_track:
             pred_silhouettes_samples = pred_dict['silhouettessamples']  # (bsize, num_samples, img_wh, img_wh)
             target_silhouettes = np.tile(target_dict['silhouettes'][:, None, :, :], (1, pred_silhouettes_samples.shape[1], 1, 1))  # (bsize, num_samples, img_wh, img_wh)
             true_positive = np.logical_and(pred_silhouettes_samples, target_silhouettes)
@@ -330,29 +330,29 @@ class EvalMetricsTracker:
         final_metrics = {}
         for metric_type in self.metrics_to_track:
             mult = 1.
-            if metric_type == 'silhouette IOU':
+            if metric_type == 'silhouette-IOU':
                 iou = self.metric_sums['num_true_positives'] / \
                       (self.metric_sums['num_true_positives'] +
                        self.metric_sums['num_false_negatives'] +
                        self.metric_sums['num_false_positives'])
-                final_metrics['silhouette IOU'] = iou
-            elif metric_type == 'silhouettesamples IOU':
+                final_metrics['silhouette-IOU'] = iou
+            elif metric_type == 'silhouettesamples-IOU':
                 iou = self.metric_sums['num_samples_true_positives'] / \
                       (self.metric_sums['num_samples_true_positives'] +
                        self.metric_sums['num_samples_false_negatives'] +
                        self.metric_sums['num_samples_false_positives'])
-                final_metrics['silhouettesamples IOU'] = iou
-            elif metric_type == 'joints2Dsamples L2E':
-                joints2Dsamples_l2e = self.metric_sums['joints2Dsamples L2E'] / self.metric_sums['num_vis_joints2Dsamples']
+                final_metrics['silhouettesamples-IOU'] = iou
+            elif metric_type == 'joints2Dsamples-L2E':
+                joints2Dsamples_l2e = self.metric_sums['joints2Dsamples-L2E'] / self.metric_sums['num_vis_joints2Dsamples']
                 final_metrics[metric_type] = joints2Dsamples_l2e
             else:
-                if 'pve' in metric_type:
+                if 'PVE' in metric_type:
                     num_per_sample = 6890
                     mult = 1000.  # mult used to convert 3D metrics from metres to millimetres
-                elif 'mpjpe' in metric_type:
+                elif 'MPJPE' in metric_type:
                     num_per_sample = 14
                     mult = 1000.
-                elif 'joints2D_' in metric_type:
+                elif 'joints2D' in metric_type:
                     num_per_sample = 17
                 final_metrics[metric_type] = self.metric_sums[metric_type] / (self.total_samples * num_per_sample)
 
@@ -360,6 +360,6 @@ class EvalMetricsTracker:
 
         if self.save_per_frame_metrics:
             for metric_type in self.metrics_to_track:
-                if 'samples' not in metric_type and 'measurements' not in metric_type:
+                if 'samples' not in metric_type:
                     per_frame = np.concatenate(self.per_frame_metrics[metric_type], axis=0)
                     np.save(os.path.join(self.save_path, metric_type+'_per_frame.npy'), per_frame)
