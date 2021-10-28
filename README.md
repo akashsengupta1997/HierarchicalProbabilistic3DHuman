@@ -71,10 +71,35 @@ This will first detect human bounding boxes in the input images using Mask-RCNN.
 
 Inference can be slow due to the rejection sampling procedure used to estimate per-vertex 3D uncertainty. If you are not interested in per-vertex uncertainty, you may modify `predict/predict_poseMF_shapeGaussian_net.py` by commenting out code related to sampling, and use a plain texture to render meshes for visualisation (this will be cleaned up and added as an option to in the `run_predict.py` future).
 
+## Evaluation
+`run_evaluate.py` is used to evaluate our method on the 3DPW and SSP-3D datasets. A description of the metrics used to measure performance is given in `metrics/eval_metrics_tracker.py`.
+
+Download SSP-3D from [here](https://github.com/akashsengupta1997/SSP-3D). Update `configs/paths.py` with the path pointing to the un-zipped SSP-3D directory. Evaluate on SSP-3D with:
+```
+python run_evaluate.py -D ssp3d
+```
+
+Download 3DPW from [here](https://virtualhumans.mpi-inf.mpg.de/3DPW/). You will need to preprocess the dataset first, to extract centred+cropped images and SMPL labels (adapted from [SPIN](https://github.com/nkolot/SPIN/tree/master/datasets/preprocess)):
+```
+python data/pw3d_preprocess.py --dataset_path $3DPW_DIR_PATH
+```
+This should create a subdirectory with preprocessed files, such that the 3DPW directory has the following structure:
+```
+$3DPW_DIR_PATH
+      ├── test                                  
+      │   ├── 3dpw_test.npz    
+      │   ├── cropped_frames   
+      ├── imageFiles
+      └── sequenceFiles
+```
+Additionally, download HRNet 2D joint detections on 3DPW from [here](https://drive.google.com/drive/u/0/folders/1GnVukI3Z1h0fq9GeD40RI8z35EfKWEda), and place this in `$3DPW_DIR_PATH/test`. Update `configs/paths.py` with the path pointing to this directory. Evaluate on 3DPW with:
+```
+python run_evaluate.py -D 3dpw
+```
+The number of samples used to evaluate sample-related metrics can be changed using the `--num_samples` option (default is 10).
 
 ## TODO
 - Training Code
-- Evaluation Code for [3DPW](https://virtualhumans.mpi-inf.mpg.de/3DPW/) and [SSP-3D](https://github.com/akashsengupta1997/SSP-3D)
 - Gendered pre-trained models for improved shape estimation
 - Weaknesses and future research
 
