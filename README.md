@@ -7,7 +7,7 @@ This is the official code repository of the above paper, which takes a probabili
 
 ![teaser](teaser.gif)
 
-This repository contains inference, training (TODO) and evaluation (TODO) code. A few weaknesses of this approach, and future research directions, are listed below (TODO).
+This repository contains inference, training (TODO) and evaluation code. A few weaknesses of this approach, and future research directions, are listed below (TODO).
 If you find this code useful in your research, please cite the following publication:
 ```
 @InProceedings{sengupta2021hierprobhuman,
