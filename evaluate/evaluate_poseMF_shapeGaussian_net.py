@@ -146,7 +146,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                                                                                   angles=np.pi,
                                                                                   translations=torch.zeros(3, device=device))
 
-            if 'silhouette IOU' in metrics:
+            if 'silhouette-IOU' in metrics:
                 wp_render_output = silhouette_renderer(vertices=pred_vertices_flipped_mode,
                                                        cam_t=cam_t,
                                                        orthographic_scale=orthographic_scale)
@@ -178,7 +178,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                                                            betas=pred_shape_samples[0, :, :]).vertices
                 pred_reposed_vertices_samples[0] = pred_reposed_vertices_mean[0]   # (num samples, 6890, 3) - Including mode as one of the samples for 3D samples min metrics
 
-                if 'joints2Dsamples L2E' in metrics:
+                if 'joints2Dsamples-L2E' in metrics:
                     pred_joints_coco_samples = pred_smpl_output_samples.joints[:, ALL_JOINTS_TO_COCO_MAP, :]  # (num samples, 17, 3)
                     # Pose targets were flipped such that they are right way up in 3D space - i.e. wrong way up when projected
                     # Need to flip pred_joints_coco 180° about x-axis so they are right way up when projected
@@ -189,7 +189,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                     pred_joints2d_coco_samples = orthographic_project_torch(pred_joints_coco_samples, pred_cam_wp)  # (num samples, 17, 2)
                     pred_joints2d_coco_samples = undo_keypoint_normalisation(pred_joints2d_coco_samples, pose_shape_config.DATA.PROXY_REP_SIZE)
 
-                if 'silhouettesamples IOU' in metrics:
+                if 'silhouettesamples-IOU' in metrics:
                     pred_silhouette_samples = []
                     for i in range(num_samples_for_metrics):
                         pred_vertices_flipped_sample = aa_rotate_translate_points_pytorch3d(points=pred_smpl_output_samples.vertices[[i]],
@@ -211,7 +211,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                            'reposed_verts': target_reposed_vertices.cpu().detach().numpy(),
                            'joints3D': target_joints_h36mlsp.cpu().detach().numpy()}
 
-            if 'joints2D L2E' in metrics:
+            if 'joints2D-L2E' in metrics:
                 pred_dict['joints2D'] = pred_joints2d_coco_mode.cpu().detach().numpy()
                 target_dict['joints2D'] = target_joints2d_coco.numpy()
             if 'silhouette IOU' in metrics:
@@ -222,9 +222,9 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                 pred_dict['verts_samples'] = pred_vertices_samples.cpu().detach().numpy()
                 pred_dict['reposed_verts_samples'] = pred_reposed_vertices_samples.cpu().detach().numpy()
                 pred_dict['joints3D_samples'] = pred_joints_h36mlsp_samples.cpu().detach().numpy()
-            if 'joints2Dsamples L2E' in metrics:
+            if 'joints2Dsamples-L2E' in metrics:
                 pred_dict['joints2Dsamples'] = pred_joints2d_coco_samples[None, :, :, :].cpu().detach().numpy()
-            if 'silhouettesamples IOU' in metrics:
+            if 'silhouettesamples-IOU' in metrics:
                 pred_dict['silhouettessamples'] = pred_silhouette_samples.cpu().detach().numpy()
 
             metrics_tracker.update_per_batch(pred_dict,

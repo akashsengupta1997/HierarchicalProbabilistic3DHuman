@@ -54,12 +54,15 @@ def run_evaluate(device,
                                        visible_joints_threshold=0.6)
 
     elif dataset_name == 'ssp3d':
-        metrics = ['PVE-PA', 'PVE-T-SC', 'silhouette IOU', 'joints2D L2E', 'joints2Dsamples L2E', 'silhouettesamples IOU']
+        metrics = ['PVE-PA', 'PVE-T-SC', 'silhouette-IOU', 'joints2D-L2E', 'joints2Dsamples-L2E', 'silhouettesamples-IOU']
         save_path = './ssp3d_eval'
         eval_dataset = SSP3DEvalDataset(ssp3d_dir_path=paths.SSP3D_PATH,
                                         config=config)
 
-    print("\nEval examples found:", len(eval_dataset))
+    print("\nEvaluating on {} with {} eval examples.".format(dataset_name, str(len(eval_dataset))))
+    print("Metrics:", metrics)
+    print("Saving to:", save_path)
+
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
