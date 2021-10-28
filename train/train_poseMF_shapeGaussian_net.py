@@ -129,7 +129,7 @@ def train_poseMF_shapeGaussian_net(device,
             joints2D_loss_on = 'means+samples'
             print('Applying J2D loss using', joints2D_loss_on, 'with {} samples.'.format(num_samples_j2Dloss))
             print('Sample on CPU:', sample_on_cpu)
-            metrics_tracker.metrics_to_track.append('joints2Dsamples_l2es')
+            metrics_tracker.metrics_to_track.append('joints2Dsamples L2E')
             print('Tracking metrics:', metrics_tracker.metrics_to_track)
 
         for split in ['train', 'val']:

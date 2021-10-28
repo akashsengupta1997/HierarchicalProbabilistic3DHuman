@@ -128,7 +128,7 @@ class TrainingLossesAndMetricsTracker:
                          num_unique_synthetic_humans_in_batch=None):  # Number of unique synthetic humans in batch (i.e. size of batch dimension)
         assert split in ['train', 'val'], "Invalid split in metric tracker batch update."
 
-        if 'silhouette_ious' in self.metrics_to_track:
+        if 'silhouette IOU' in self.metrics_to_track:
             assert (pred_silhouettes is not None) and (target_silhouettes is not None), \
                 "Need to pass silhouettes to metric tracker batch update."
             pred_silhouettes = pred_silhouettes.cpu().detach().numpy()
@@ -146,7 +146,7 @@ class TrainingLossesAndMetricsTracker:
             if key in target_dict.keys():
                 target_dict[key] = target_dict[key].cpu().detach().numpy()
 
-        if 'joints2Dsamples_l2es' in self.metrics_to_track:
+        if 'joints2Dsamples L2E' in self.metrics_to_track:
             target_dict['joints2D_vis'] = target_dict['joints2D_vis'].cpu().detach().numpy()
 
         # -------- Update loss sums --------
@@ -162,12 +162,12 @@ class TrainingLossesAndMetricsTracker:
             self.loss_metric_sums[split+'_'+loss_on+'_losses'] += task_losses_dict[loss_on].item() * num_inputs_in_batch
 
         # -------- Update metrics sums --------
-        if 'pves' in self.metrics_to_track:
+        if 'PVE' in self.metrics_to_track:
             pve_batch = np.linalg.norm(pred_dict['verts'] - target_dict['verts'], axis=-1)  # (bsize, 6890) or (bsize, num views, 6890)
             self.loss_metric_sums[split + '_pves'] += np.sum(pve_batch)  # scalar
 
         # Scale and translation correction
-        if 'pves_sc' in self.metrics_to_track:
+        if 'PVE-SC' in self.metrics_to_track:
             pred_vertices = pred_dict['verts']  # (bsize, 6890, 3) or (bsize, num views, 6890, 3)
             target_vertices = target_dict['verts']  # (bsize, 6890, 3) or (bsize, num views, 6890, 3)
             pred_vertices_sc = scale_and_translation_transform_batch(pred_vertices.reshape(-1, 6890, 3),
@@ -176,7 +176,7 @@ class TrainingLossesAndMetricsTracker:
             self.loss_metric_sums[split + '_pves_sc'] += np.sum(pve_sc_batch)  # scalar
 
         # Procrustes analysis
-        if 'pves_pa' in self.metrics_to_track:
+        if 'PVE-PA' in self.metrics_to_track:
             pred_vertices = pred_dict['verts']  # (bsize, 6890, 3)  or (bsize, num views, 6890, 3)
             target_vertices = target_dict['verts']  # (bsize, 6890, 3) or (bsize, num views, 6890, 3)
             pred_vertices_pa = procrustes_analysis_batch(pred_vertices.reshape(-1, 6890, 3),
@@ -190,7 +190,7 @@ class TrainingLossesAndMetricsTracker:
             self.loss_metric_sums[split + '_pve-ts'] += np.sum(pvet_batch)
 
         # Reposed + Scale and translation correction
-        if 'pve-ts_sc' in self.metrics_to_track:
+        if 'PVE-T-SC' in self.metrics_to_track:
             pred_reposed_vertices_sc = scale_and_translation_transform_batch(pred_reposed_vertices,
                                                                              target_reposed_vertices)
             pvet_sc_batch = np.linalg.norm(pred_reposed_vertices_sc - target_reposed_vertices, axis=-1)  # (bs, 6890)
@@ -203,12 +203,12 @@ class TrainingLossesAndMetricsTracker:
             pvet_pa_batch = np.linalg.norm(pred_reposed_vertices_pa - target_reposed_vertices, axis=-1)  # (bsize, 6890)
             self.loss_metric_sums[split + '_pve-ts_pa'] += np.sum(pvet_pa_batch)  # scalar
 
-        if 'mpjpes' in self.metrics_to_track:
+        if 'MPJPE' in self.metrics_to_track:
             mpjpe_batch = np.linalg.norm(pred_dict['joints3D'] - target_dict['joints3D'], axis=-1)  # (bsize, 14) or (bsize, num views, 14)
             self.loss_metric_sums[split + '_mpjpes'] += np.sum(mpjpe_batch)  # scalar
 
         # Scale and translation correction
-        if 'mpjpes_sc' in self.metrics_to_track:
+        if 'MPJPE-SC' in self.metrics_to_track:
             pred_joints3D_h36mlsp = pred_dict['joints3D']  # (bsize, 14, 3) or (bsize, num views, 14, 3)
             target_joints3D_h36mlsp = target_dict['joints3D']  # (bsize, 14, 3) or (bsize, num views, 14, 3)
             pred_joints3D_h36mlsp_sc = scale_and_translation_transform_batch(pred_joints3D_h36mlsp.reshape(-1, 14, 3),
@@ -218,7 +218,7 @@ class TrainingLossesAndMetricsTracker:
             self.loss_metric_sums[split + '_mpjpes_sc'] += np.sum(mpjpe_sc_batch)  # scalar
 
         # Procrustes analysis
-        if 'mpjpes_pa' in self.metrics_to_track:
+        if 'MPJPE-PA' in self.metrics_to_track:
             pred_joints3D_h36mlsp = pred_dict['joints3D']  # (bsize, 14, 3) or (bsize, num views, 14, 3)
             target_joints3D_h36mlsp = target_dict['joints3D']  # (bsize, 14, 3) or (bsize, num views, 14, 3)
             pred_joints3D_h36mlsp_pa = procrustes_analysis_batch(pred_joints3D_h36mlsp.reshape(-1, 14, 3),
@@ -235,14 +235,14 @@ class TrainingLossesAndMetricsTracker:
             self.loss_metric_sums[split + '_shape_mses'] += np.sum((pred_dict['shape_params'] -
                                                                     target_dict['shape_params']) ** 2)
 
-        if 'joints2D_l2es' in self.metrics_to_track:
+        if 'joints2D L2E' in self.metrics_to_track:
             pred_joints2D_coco = pred_dict['joints2D'] # (bsize, 17, 2) or (bsize, num views, 17, 2)
             target_joints2D_coco = target_dict['joints2D']  # (bsize, 17, 2) or (bsize, num views, 17, 2)
             pred_joints2D_coco = undo_keypoint_normalisation(pred_joints2D_coco, self.img_wh)
             joints2D_l2e_batch = np.linalg.norm(pred_joints2D_coco - target_joints2D_coco, axis=-1)  # (bsize, 17) or (bsize, num views, 17)
             self.loss_metric_sums[split + '_joints2D_l2es'] += np.sum(joints2D_l2e_batch)  # scalar
 
-        if 'joints2Dsamples_l2es' in self.metrics_to_track:
+        if 'joints2Dsamples L2E' in self.metrics_to_track:
             pred_joints2D_coco_samples = pred_dict['joints2Dsamples']  # (bsize, num_samples, 17, 2)
             target_joints2D_coco = np.tile(target_dict['joints2D'][:, None, :, :], (1, pred_joints2D_coco_samples.shape[1], 1, 1))  # (bsize, num_samples, 17, 2)
             target_joints2d_vis_coco = np.tile(target_dict['joints2D_vis'][:, None, :], (1, pred_joints2D_coco_samples.shape[1], 1))   # (bsize, num_samples, 17)
@@ -254,7 +254,7 @@ class TrainingLossesAndMetricsTracker:
             self.loss_metric_sums[split + '_joints2Dsamples_l2es'] += np.sum(joints2Dsamples_l2e_batch)  # scalar
             self.loss_metric_sums[split + '_num_vis_joints2Dsamples'] += joints2Dsamples_l2e_batch.shape[0]
 
-        if 'silhouette_ious' in self.metrics_to_track:
+        if 'silhouette IOU' in self.metrics_to_track:
             true_positive = np.logical_and(pred_silhouettes, target_silhouettes) # (bsize, img_wh, img_wh) or (bsize, num views, img_wh, img_wh)
             false_positive = np.logical_and(pred_silhouettes, np.logical_not(target_silhouettes))
             true_negative = np.logical_and(np.logical_not(pred_silhouettes), np.logical_not(target_silhouettes))
