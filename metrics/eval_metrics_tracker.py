@@ -44,17 +44,17 @@ class EvalMetricsTracker:
     def initialise_metric_sums(self):
         self.metric_sums = {}
         for metric_type in self.metrics_to_track:
-            if metric_type == 'silhouette_ious':
+            if metric_type == 'silhouette IOU':
                 self.metric_sums['num_true_positives'] = 0.
                 self.metric_sums['num_false_positives'] = 0.
                 self.metric_sums['num_true_negatives'] = 0.
                 self.metric_sums['num_false_negatives'] = 0.
-            elif metric_type == 'silhouettesamples_ious':
+            elif metric_type == 'silhouettesamples IOU':
                 self.metric_sums['num_samples_true_positives'] = 0.
                 self.metric_sums['num_samples_false_positives'] = 0.
                 self.metric_sums['num_samples_true_negatives'] = 0.
                 self.metric_sums['num_samples_false_negatives'] = 0.
-            elif metric_type == 'joints2Dsamples_l2es':
+            elif metric_type == 'joints2Dsamples L2E':
                 self.metric_sums['num_vis_joints2Dsamples'] = 0.
                 self.metric_sums[metric_type] = 0.
             else:
@@ -83,38 +83,38 @@ class EvalMetricsTracker:
             per_frame_metrics_return_dict = None
 
         # -------- Update metrics sums --------
-        if 'pves' in self.metrics_to_track:
+        if 'PVE' in self.metrics_to_track:
             pve_batch = np.linalg.norm(pred_dict['verts'] - target_dict['verts'], axis=-1)  # (bsize, 6890) or (num views, 6890)
-            self.metric_sums['pves'] += np.sum(pve_batch)  # scalar
-            self.per_frame_metrics['pves'].append(np.mean(pve_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['PVE'] += np.sum(pve_batch)  # scalar
+            self.per_frame_metrics['PVE'].append(np.mean(pve_batch, axis=-1))  # (bs,) or (num views,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['pves'] = np.mean(pve_batch, axis=-1)
+                per_frame_metrics_return_dict['PVE'] = np.mean(pve_batch, axis=-1)
 
         # Scale and translation correction
-        if 'pves_sc' in self.metrics_to_track:
+        if 'PVE-SC' in self.metrics_to_track:
             pred_vertices = pred_dict['verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
             target_vertices = target_dict['verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
             pred_vertices_sc = scale_and_translation_transform_batch(pred_vertices, target_vertices)
             pve_sc_batch = np.linalg.norm(pred_vertices_sc - target_vertices, axis=-1)  # (bs, 6890) or (num views, 6890)
-            self.metric_sums['pves_sc'] += np.sum(pve_sc_batch)  # scalar
-            self.per_frame_metrics['pves_sc'].append(np.mean(pve_sc_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['PVE-SC'] += np.sum(pve_sc_batch)  # scalar
+            self.per_frame_metrics['PVE-SC'].append(np.mean(pve_sc_batch, axis=-1))  # (bs,) or (num views,)
             if return_transformed_points:
                 transformed_points_return_dict['pred_vertices_sc'] = pred_vertices_sc
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['pves_sc'] = np.mean(pve_sc_batch, axis=-1)
+                per_frame_metrics_return_dict['PVE-SC'] = np.mean(pve_sc_batch, axis=-1)
 
         # Procrustes analysis
-        if 'pves_pa' in self.metrics_to_track:
+        if 'PVE-PA' in self.metrics_to_track:
             pred_vertices = pred_dict['verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
             target_vertices = target_dict['verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
             pred_vertices_pa = procrustes_analysis_batch(pred_vertices, target_vertices)
             pve_pa_batch = np.linalg.norm(pred_vertices_pa - target_vertices, axis=-1)  # (bsize, 6890) or (num views, 6890)
-            self.metric_sums['pves_pa'] += np.sum(pve_pa_batch)  # scalar
-            self.per_frame_metrics['pves_pa'].append(np.mean(pve_pa_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['PVE-PA'] += np.sum(pve_pa_batch)  # scalar
+            self.per_frame_metrics['PVE-PA'].append(np.mean(pve_pa_batch, axis=-1))  # (bs,) or (num views,)
             if return_transformed_points:
                 transformed_points_return_dict['pred_vertices_pa'] = pred_vertices_pa
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['pves_pa'] = np.mean(pve_pa_batch, axis=-1)
+                per_frame_metrics_return_dict['PVE-PA'] = np.mean(pve_pa_batch, axis=-1)
 
         # Reposed
         if 'pve-ts' in self.metrics_to_track:
@@ -125,53 +125,53 @@ class EvalMetricsTracker:
                 per_frame_metrics_return_dict['pve-ts'] = np.mean(pvet_batch, axis=-1)
 
         # Reposed + Scale and translation correction
-        if 'pve-ts_sc' in self.metrics_to_track:
+        if 'PVE-T-SC' in self.metrics_to_track:
             pred_reposed_vertices = pred_dict['reposed_verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
             target_reposed_vertices = target_dict['reposed_verts']  # (bsize, 6890, 3) or (num views, 6890, 3)
             pred_reposed_vertices_sc = scale_and_translation_transform_batch(pred_reposed_vertices,
                                                                              target_reposed_vertices)
             pvet_sc_batch = np.linalg.norm(pred_reposed_vertices_sc - target_reposed_vertices, axis=-1)  # (bs, 6890) or (num views, 6890)
-            self.metric_sums['pve-ts_sc'] += np.sum(pvet_sc_batch)  # scalar
-            self.per_frame_metrics['pve-ts_sc'].append(np.mean(pvet_sc_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['PVE-T-SC'] += np.sum(pvet_sc_batch)  # scalar
+            self.per_frame_metrics['PVE-T-SC'].append(np.mean(pvet_sc_batch, axis=-1))  # (bs,) or (num views,)
             if return_transformed_points:
                 transformed_points_return_dict['pred_reposed_vertices_sc'] = pred_reposed_vertices_sc
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['pve-ts_sc'] = np.mean(pvet_sc_batch, axis=-1)
+                per_frame_metrics_return_dict['PVE-T-SC'] = np.mean(pvet_sc_batch, axis=-1)
 
-        if 'mpjpes' in self.metrics_to_track:
+        if 'MPJPE' in self.metrics_to_track:
             mpjpe_batch = np.linalg.norm(pred_dict['joints3D'] - target_dict['joints3D'], axis=-1)  # (bsize, 14) or (num views, 14)
-            self.metric_sums['mpjpes'] += np.sum(mpjpe_batch)  # scalar
-            self.per_frame_metrics['mpjpes'].append(np.mean(mpjpe_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['MPJPE'] += np.sum(mpjpe_batch)  # scalar
+            self.per_frame_metrics['MPJPE'].append(np.mean(mpjpe_batch, axis=-1))  # (bs,) or (num views,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['mpjpes'] = np.mean(mpjpe_batch, axis=-1)
+                per_frame_metrics_return_dict['MPJPE'] = np.mean(mpjpe_batch, axis=-1)
 
         # Scale and translation correction
-        if 'mpjpes_sc' in self.metrics_to_track:
+        if 'MPJPE-SC' in self.metrics_to_track:
             pred_joints3D_h36mlsp = pred_dict['joints3D']  # (bsize, 14, 3) or (num views, 14, 3)
             target_joints3D_h36mlsp = target_dict['joints3D']  # (bsize, 14, 3) or (num views, 14, 3)
             pred_joints3D_h36mlsp_sc = scale_and_translation_transform_batch(pred_joints3D_h36mlsp,
                                                                              target_joints3D_h36mlsp)
             mpjpe_sc_batch = np.linalg.norm(pred_joints3D_h36mlsp_sc - target_joints3D_h36mlsp, axis=-1)  # (bsize, 14) or (num views, 14)
-            self.metric_sums['mpjpes_sc'] += np.sum(mpjpe_sc_batch)  # scalar
-            self.per_frame_metrics['mpjpes_sc'].append(np.mean(mpjpe_sc_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['MPJPE-SC'] += np.sum(mpjpe_sc_batch)  # scalar
+            self.per_frame_metrics['MPJPE-SC'].append(np.mean(mpjpe_sc_batch, axis=-1))  # (bs,) or (num views,)
             if return_transformed_points:
                 transformed_points_return_dict['pred_joints3D_h36mlsp_sc'] = pred_joints3D_h36mlsp_sc
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['mpjpes_sc'] = np.mean(mpjpe_sc_batch, axis=-1)
+                per_frame_metrics_return_dict['MPJPE-SC'] = np.mean(mpjpe_sc_batch, axis=-1)
 
         # Procrustes analysis
-        if 'mpjpes_pa' in self.metrics_to_track:
+        if 'MPJPE-PA' in self.metrics_to_track:
             pred_joints3D_h36mlsp = pred_dict['joints3D']  # (bsize, 14, 3) or (num views, 14, 3)
             target_joints3D_h36mlsp = target_dict['joints3D']  # (bsize, 14, 3) or (num views, 14, 3)
             pred_joints3D_h36mlsp_pa = procrustes_analysis_batch(pred_joints3D_h36mlsp,
                                                                  target_joints3D_h36mlsp)
             mpjpe_pa_batch = np.linalg.norm(pred_joints3D_h36mlsp_pa - target_joints3D_h36mlsp, axis=-1)  # (bsize, 14) or (num views, 14)
-            self.metric_sums['mpjpes_pa'] += np.sum(mpjpe_pa_batch)  # scalar
-            self.per_frame_metrics['mpjpes_pa'].append(np.mean(mpjpe_pa_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['MPJPE-PA'] += np.sum(mpjpe_pa_batch)  # scalar
+            self.per_frame_metrics['MPJPE-PA'].append(np.mean(mpjpe_pa_batch, axis=-1))  # (bs,) or (num views,)
             if return_transformed_points:
                 transformed_points_return_dict['pred_joints3D_h36mlsp_pa'] = pred_joints3D_h36mlsp_pa
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['mpjpes_pa'] = np.mean(mpjpe_pa_batch, axis=-1)
+                per_frame_metrics_return_dict['MPJPE-PA'] = np.mean(mpjpe_pa_batch, axis=-1)
 
         if 'pves_samples_min' in self.metrics_to_track:
             assert num_input_samples == 1, "Batch size must be 1 for min samples metrics!"
@@ -265,16 +265,16 @@ class EvalMetricsTracker:
             self.metric_sums['mpjpes_pa_samples_min'] += np.sum(mpjpe_pa_samples_min_batch)  # scalar
             self.per_frame_metrics['mpjpes_pa_samples_min'].append(np.mean(mpjpe_pa_samples_min_batch, axis=-1))  # (1,) i.e. scalar
 
-        if 'joints2D_l2es' in self.metrics_to_track:
+        if 'joints2D L2E' in self.metrics_to_track:
             pred_joints2D_coco = pred_dict['joints2D']  # (bsize, 17, 2) or (num views, 17, 2)
             target_joints2D_coco = target_dict['joints2D']  # (bsize, 17, 2) or (num views, 17, 2)
             joints2D_l2e_batch = np.linalg.norm(pred_joints2D_coco - target_joints2D_coco, axis=-1)  # (bsize, 17) or (num views, 17)
-            self.metric_sums['joints2D_l2es'] += np.sum(joints2D_l2e_batch)  # scalar
-            self.per_frame_metrics['joints2D_l2es'].append(np.mean(joints2D_l2e_batch, axis=-1))  # (bs,) or (num views,)
+            self.metric_sums['joints2D L2E'] += np.sum(joints2D_l2e_batch)  # scalar
+            self.per_frame_metrics['joints2D L2E'].append(np.mean(joints2D_l2e_batch, axis=-1))  # (bs,) or (num views,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['joints2D_l2es'] = np.mean(joints2D_l2e_batch, axis=-1)
+                per_frame_metrics_return_dict['joints2D L2E'] = np.mean(joints2D_l2e_batch, axis=-1)
 
-        if 'joints2Dsamples_l2es' in self.metrics_to_track:
+        if 'joints2Dsamples L2E' in self.metrics_to_track:
             pred_joints2D_coco_samples = pred_dict['joints2Dsamples']  # (bsize, num_samples, 17, 2)
             target_joints2D_coco = np.tile(target_dict['joints2D'][:, None, :, :], (1, pred_joints2D_coco_samples.shape[1], 1, 1))  # (bsize, num_samples, 17, 2)
             if 'joints2D_vis' in target_dict.keys():
@@ -285,10 +285,10 @@ class EvalMetricsTracker:
             if 'joints2D_vis' in target_dict.keys():
                 assert joints2Dsamples_l2e_batch.shape[0] == target_joints2d_vis_coco.sum()
             joints2Dsamples_l2e_batch = joints2Dsamples_l2e_batch.reshape(-1)
-            self.metric_sums['joints2Dsamples_l2es'] += np.sum(joints2Dsamples_l2e_batch)  # scalar
+            self.metric_sums['joints2Dsamples L2E'] += np.sum(joints2Dsamples_l2e_batch)  # scalar
             self.metric_sums['num_vis_joints2Dsamples'] += joints2Dsamples_l2e_batch.shape[0]
 
-        if 'silhouette_ious' in self.metrics_to_track:
+        if 'silhouette IOU' in self.metrics_to_track:
             pred_silhouettes = pred_dict['silhouettes']  # (bsize, img_wh, img_wh) or (num views, img_wh, img_wh)
             target_silhouettes = target_dict['silhouettes']  # (bsize, img_wh, img_wh) or (num views, img_wh, img_wh)
             true_positive = np.logical_and(pred_silhouettes, target_silhouettes)
@@ -304,11 +304,11 @@ class EvalMetricsTracker:
             self.metric_sums['num_true_negatives'] += np.sum(num_tn)
             self.metric_sums['num_false_negatives'] += np.sum(num_fn)
             iou_per_frame = num_tp/(num_tp + num_fp + num_fn)
-            self.per_frame_metrics['silhouette_ious'].append(iou_per_frame)  # (bs,) or (num views,)
+            self.per_frame_metrics['silhouette IOU'].append(iou_per_frame)  # (bs,) or (num views,)
             if return_per_frame_metrics:
-                per_frame_metrics_return_dict['silhouette_ious'] = iou_per_frame
+                per_frame_metrics_return_dict['silhouette IOU'] = iou_per_frame
 
-        if 'silhouettesamples_ious' in self.metrics_to_track:
+        if 'silhouettesamples IOU' in self.metrics_to_track:
             pred_silhouettes_samples = pred_dict['silhouettessamples']  # (bsize, num_samples, img_wh, img_wh)
             target_silhouettes = np.tile(target_dict['silhouettes'][:, None, :, :], (1, pred_silhouettes_samples.shape[1], 1, 1))  # (bsize, num_samples, img_wh, img_wh)
             true_positive = np.logical_and(pred_silhouettes_samples, target_silhouettes)
@@ -330,20 +330,20 @@ class EvalMetricsTracker:
         final_metrics = {}
         for metric_type in self.metrics_to_track:
             mult = 1.
-            if metric_type == 'silhouette_ious':
+            if metric_type == 'silhouette IOU':
                 iou = self.metric_sums['num_true_positives'] / \
                       (self.metric_sums['num_true_positives'] +
                        self.metric_sums['num_false_negatives'] +
                        self.metric_sums['num_false_positives'])
-                final_metrics['silhouette_ious'] = iou
-            elif metric_type == 'silhouettesamples_ious':
+                final_metrics['silhouette IOU'] = iou
+            elif metric_type == 'silhouettesamples IOU':
                 iou = self.metric_sums['num_samples_true_positives'] / \
                       (self.metric_sums['num_samples_true_positives'] +
                        self.metric_sums['num_samples_false_negatives'] +
                        self.metric_sums['num_samples_false_positives'])
-                final_metrics['silhouettesamples_ious'] = iou
-            elif metric_type == 'joints2Dsamples_l2es':
-                joints2Dsamples_l2e = self.metric_sums['joints2Dsamples_l2es'] / self.metric_sums['num_vis_joints2Dsamples']
+                final_metrics['silhouettesamples IOU'] = iou
+            elif metric_type == 'joints2Dsamples L2E':
+                joints2Dsamples_l2e = self.metric_sums['joints2Dsamples L2E'] / self.metric_sums['num_vis_joints2Dsamples']
                 final_metrics[metric_type] = joints2Dsamples_l2e
             else:
                 if 'pve' in metric_type:

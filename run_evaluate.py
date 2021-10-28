@@ -46,7 +46,7 @@ def run_evaluate(device,
 
     # ------------------ Dataset + Metrics + Evaluate ------------------
     if dataset_name == '3dpw':
-        metrics = ['pves', 'pves_sc', 'pves_pa', 'pve-ts_sc', 'mpjpes', 'mpjpes_sc', 'mpjpes_pa']
+        metrics = ['PVE', 'PVE-SC', 'PVE-PA', 'PVE-T-SC', 'MPJPE', 'MPJPE-SC', 'MPJPE-PA']
         metrics += [metric + '_samples_min' for metric in metrics]
         save_path = './3dpw_eval'
         eval_dataset = PW3DEvalDataset(pw3d_dir_path=paths.PW3D_PATH,
@@ -54,7 +54,7 @@ def run_evaluate(device,
                                        visible_joints_threshold=0.6)
 
     elif dataset_name == 'ssp3d':
-        metrics = ['pves_pa', 'pve-ts_sc', 'silhouette_ious', 'joints2D_l2es', 'joints2Dsamples_l2es', 'silhouettesamples_ious']
+        metrics = ['PVE-PA', 'PVE-T-SC', 'silhouette IOU', 'joints2D L2E', 'joints2Dsamples L2E', 'silhouettesamples IOU']
         save_path = './ssp3d_eval'
         eval_dataset = SSP3DEvalDataset(ssp3d_dir_path=paths.SSP3D_PATH,
                                         config=config)
