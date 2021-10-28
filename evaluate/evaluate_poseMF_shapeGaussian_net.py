@@ -214,7 +214,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
             if 'joints2D-L2E' in metrics:
                 pred_dict['joints2D'] = pred_joints2d_coco_mode.cpu().detach().numpy()
                 target_dict['joints2D'] = target_joints2d_coco.numpy()
-            if 'silhouette IOU' in metrics:
+            if 'silhouette-IOU' in metrics:
                 pred_dict['silhouettes'] = pred_silhouette_mode.cpu().detach().numpy()
                 target_dict['silhouettes'] = target_silhouette.numpy()
 
