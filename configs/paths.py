@@ -12,12 +12,8 @@ HRNET_WEIGHTS = './model_files/pose_hrnet_w48_384x288.pth'
 POSE_SHAPE_NET_WEIGHTS = './model_files/poseMF_shapeGaussian_net_weights.tar'
 
 # ------------------------- Eval Datasets -------------------------
-<<<<<<< HEAD
 PW3D_PATH = '/scratch2/as2562/datasets/3DPW/test'
 SSP3D_PATH = '/scratch2/as2562/datasets/ssp_3d'
-=======
-PW3D_PATH = ''
-SSP3D_PATH = ''
 
 # ------------------------- Train Datasets -------------------------
 TRAIN_POSES_PATH = ''
@@ -26,4 +22,3 @@ TRAIN_BACKGROUNDS_PATH = ''
 VAL_POSES_PATH = ''
 VAL_TEXTURES_PATH = ''
 VAL_BACKGROUNDS_PATH = ''
->>>>>>> 56ccd81459dec597daad291b2a1a40215a01c490
