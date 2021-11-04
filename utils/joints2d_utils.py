@@ -12,18 +12,18 @@ def undo_keypoint_normalisation(normalised_keypoints, img_wh):
 
 def check_joints2d_visibility_torch(joints2d,
                                     img_wh,
-                                    vis=None):
+                                    visibility=None):
     """
     Checks if 2D joints are within the image dimensions.
     """
-    if vis is None:
-        vis = torch.ones(joints2d.shape[:2], device=joints2d.device, dtype=torch.bool)
-    vis[joints2d[:, :, 0] > img_wh] = 0
-    vis[joints2d[:, :, 1] > img_wh] = 0
-    vis[joints2d[:, :, 0] < 0] = 0
-    vis[joints2d[:, :, 1] < 0] = 0
+    if visibility is None:
+        visibility = torch.ones(joints2d.shape[:2], device=joints2d.device, dtype=torch.bool)
+    visibility[joints2d[:, :, 0] > img_wh] = 0
+    visibility[joints2d[:, :, 1] > img_wh] = 0
+    visibility[joints2d[:, :, 0] < 0] = 0
+    visibility[joints2d[:, :, 1] < 0] = 0
 
-    return vis
+    return visibility
 
 
 def check_joints2d_occluded_torch(seg14part, vis, pixel_count_threshold=50):

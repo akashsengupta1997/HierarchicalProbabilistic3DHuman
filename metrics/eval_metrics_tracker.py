@@ -29,7 +29,10 @@ class EvalMetricsTracker:
             - Mean silhouette-IOU over N samples obtained from shape/pose distribution.
             - All 2D samples from predicted 3D distribution should match 2D target silhouette.
     """
-    def __init__(self, metrics_to_track, img_wh=None, save_path=None,
+    def __init__(self,
+                 metrics_to_track,
+                 img_wh=None,
+                 save_path=None,
                  save_per_frame_metrics=False):
 
         self.metrics_to_track = metrics_to_track

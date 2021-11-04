@@ -93,7 +93,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_config.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
             proxy_rep_heatmaps = convert_2Djoints_to_gaussian_heatmaps_torch(joints2D=cropped_for_proxy['joints2D'],
                                                                              img_wh=pose_shape_config.DATA.PROXY_REP_SIZE,
-                                                                             std=4)
+                                                                             std=pose_shape_config.DATA.HEATMAP_GAUSSIAN_STD)
             hrnet_joints2Dvisib = hrnet_output['joints2Dconfs'] > joints2Dvisib_threshold
             hrnet_joints2Dvisib[[0, 1, 2, 3, 4, 5, 6, 11, 12]] = True  # Only removing joints [7, 8, 9, 10, 13, 14, 15, 16] if occluded
             proxy_rep_heatmaps = proxy_rep_heatmaps * hrnet_joints2Dvisib[None, :, None, None]

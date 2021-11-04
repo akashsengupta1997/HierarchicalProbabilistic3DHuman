@@ -102,9 +102,13 @@ def convert_2Djoints_to_gaussian_heatmaps(joints2D, img_wh, std=4):
     return heatmap
 
 
-def convert_2Djoints_to_gaussian_heatmaps_torch(joints2D, img_wh, std=4):
+def convert_2Djoints_to_gaussian_heatmaps_torch(joints2D,
+                                                img_wh,
+                                                std=4):
     """
     :param joints2D: (B, N, 2) tensor - batch of 2D joints.
+    :param img_wh: int, dimensions of square heatmaps
+    :param std: standard deviation of gaussian blobs
     :return heatmaps: (B, N, img_wh, img_wh) - batch of 2D joint heatmaps (channels first).
     """
     device = joints2D.device
