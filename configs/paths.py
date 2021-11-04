@@ -14,3 +14,11 @@ POSE_SHAPE_NET_WEIGHTS = './model_files/poseMF_shapeGaussian_net_weights.tar'
 # ------------------------- Eval Datasets -------------------------
 PW3D_PATH = ''
 SSP3D_PATH = ''
+
+# ------------------------- Train Datasets -------------------------
+TRAIN_POSES_PATH = ''
+TRAIN_TEXTURES_PATH = ''
+TRAIN_BACKGROUNDS_PATH = ''
+VAL_POSES_PATH = ''
+VAL_TEXTURES_PATH = ''
+VAL_BACKGROUNDS_PATH = ''

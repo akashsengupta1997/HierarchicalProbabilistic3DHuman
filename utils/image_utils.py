@@ -256,6 +256,8 @@ def batch_crop_pytorch_affine(input_wh,
     :param joints2D: (B, K, 2)
     :param rgb: (B, 3, H, W)
     :param seg: (B, H, W)
+    :param bbox_determiner: (B, H, W) segmentation/silhouette used to determine bbox corners if bbox corners
+                            not determined by given iuv/joints2D/seg (e.g. used for extreme_crop augmentation)
     :param bbox_centres: (B, 2) bounding box centres in (vertical, horizontal) coordinates
     :param bbox_heights: (B,)
     :param bbox_widths: (B,
