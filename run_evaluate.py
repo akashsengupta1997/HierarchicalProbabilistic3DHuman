@@ -3,7 +3,7 @@ import torch
 import argparse
 
 from configs import paths
-from configs.poseMF_shapeGaussian_net_config import config
+from configs.poseMF_shapeGaussian_net_config import get_poseMF_shapeGaussian_cfg_defaults
 
 from data.pw3d_eval_dataset import PW3DEvalDataset
 from data.ssp3d_eval_dataset import SSP3DEvalDataset
@@ -19,16 +19,18 @@ def run_evaluate(device,
                  num_samples_for_metrics=10):
 
     # ------------------ Models ------------------
+    pose_shape_cfg = get_poseMF_shapeGaussian_cfg_defaults()
+
     # Edge detector
-    edge_detect_model = CannyEdgeDetector(non_max_suppression=config.DATA.EDGE_NMS,
-                                          gaussian_filter_std=config.DATA.EDGE_GAUSSIAN_STD,
-                                          gaussian_filter_size=config.DATA.EDGE_GAUSSIAN_SIZE,
-                                          threshold=config.DATA.EDGE_THRESHOLD).to(device)
+    edge_detect_model = CannyEdgeDetector(non_max_suppression=pose_shape_cfg.DATA.EDGE_NMS,
+                                          gaussian_filter_std=pose_shape_cfg.DATA.EDGE_GAUSSIAN_STD,
+                                          gaussian_filter_size=pose_shape_cfg.DATA.EDGE_GAUSSIAN_SIZE,
+                                          threshold=pose_shape_cfg.DATA.EDGE_THRESHOLD).to(device)
 
     # SMPL neutral/male/female models
     smpl_model = SMPL(paths.SMPL,
                       batch_size=1,
-                      num_betas=config.MODEL.NUM_SMPL_BETAS).to(device)
+                      num_betas=pose_shape_cfg.MODEL.NUM_SMPL_BETAS).to(device)
     smpl_immediate_parents = smpl_model.parents.tolist()
     smpl_model_male = SMPL(paths.SMPL,
                            batch_size=1,
@@ -39,7 +41,7 @@ def run_evaluate(device,
 
     # 3D shape and pose distribution predictor
     pose_shape_dist_model = PoseMFShapeGaussianNet(smpl_parents=smpl_immediate_parents,
-                                                   config=config).to(device)
+                                                   config=pose_shape_cfg).to(device)
     checkpoint = torch.load(paths.POSE_SHAPE_NET_WEIGHTS, map_location=device)
     pose_shape_dist_model.load_state_dict(checkpoint['best_model_state_dict'])
     print('Loaded Distribution Predictor weights from', paths.POSE_SHAPE_NET_WEIGHTS)
@@ -50,14 +52,14 @@ def run_evaluate(device,
         metrics += [metric + '_samples_min' for metric in metrics]
         save_path = './3dpw_eval'
         eval_dataset = PW3DEvalDataset(pw3d_dir_path=paths.PW3D_PATH,
-                                       config=config,
+                                       config=pose_shape_cfg,
                                        visible_joints_threshold=0.6)
 
     elif dataset_name == 'ssp3d':
         metrics = ['PVE-PA', 'PVE-T-SC', 'silhouette-IOU', 'joints2D-L2E', 'joints2Dsamples-L2E', 'silhouettesamples-IOU']
         save_path = './ssp3d_eval'
         eval_dataset = SSP3DEvalDataset(ssp3d_dir_path=paths.SSP3D_PATH,
-                                        config=config)
+                                        config=pose_shape_cfg)
 
     print("\nEvaluating on {} with {} eval examples.".format(dataset_name, str(len(eval_dataset))))
     print("Metrics:", metrics)
@@ -67,7 +69,7 @@ def run_evaluate(device,
         os.makedirs(save_path)
 
     evaluate_pose_MF_shapeGaussian_net(pose_shape_model=pose_shape_dist_model,
-                                       pose_shape_config=config,
+                                       pose_shape_config=pose_shape_cfg,
                                        smpl_model=smpl_model,
                                        smpl_model_male=smpl_model_male,
                                        smpl_model_female=smpl_model_female,

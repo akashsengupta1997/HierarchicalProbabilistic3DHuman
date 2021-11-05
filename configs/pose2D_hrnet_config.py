@@ -54,5 +54,7 @@ _C.TEST = CfgNode()
 _C.TEST.POST_PROCESS = False
 _C.TEST.OBJECT_DET_THRESH = 0.95
 
-pose2D_hrnet_config = _C
+
+def get_pose2D_hrnet_cfg_defaults():
+    return _C.clone()
 
