@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import argparse
 
@@ -16,10 +17,18 @@ from evaluate.evaluate_poseMF_shapeGaussian_net import evaluate_pose_MF_shapeGau
 
 def run_evaluate(device,
                  dataset_name,
+                 pose_shape_weights_path,
+                 pose_shape_cfg_path=None,
                  num_samples_for_metrics=10):
 
     # ------------------ Models ------------------
+    # Config
     pose_shape_cfg = get_poseMF_shapeGaussian_cfg_defaults()
+    if pose_shape_cfg_path is not None:
+        pose_shape_cfg.merge_from_file(pose_shape_cfg_path)
+        print('\nLoaded Distribution Predictor config from', pose_shape_cfg_path)
+    else:
+        print('\nUsing default Distribution Predictor config.')
 
     # Edge detector
     edge_detect_model = CannyEdgeDetector(non_max_suppression=pose_shape_cfg.DATA.EDGE_NMS,
@@ -42,11 +51,11 @@ def run_evaluate(device,
     # 3D shape and pose distribution predictor
     pose_shape_dist_model = PoseMFShapeGaussianNet(smpl_parents=smpl_immediate_parents,
                                                    config=pose_shape_cfg).to(device)
-    checkpoint = torch.load(paths.POSE_SHAPE_NET_WEIGHTS, map_location=device)
+    checkpoint = torch.load(pose_shape_weights_path, map_location=device)
     pose_shape_dist_model.load_state_dict(checkpoint['best_model_state_dict'])
-    print('Loaded Distribution Predictor weights from', paths.POSE_SHAPE_NET_WEIGHTS)
+    print('\nLoaded Distribution Predictor weights from', pose_shape_weights_path)
 
-    # ------------------ Dataset + Metrics + Evaluate ------------------
+    # ------------------ Dataset + Metrics ------------------
     if dataset_name == '3dpw':
         metrics = ['PVE', 'PVE-SC', 'PVE-PA', 'PVE-T-SC', 'MPJPE', 'MPJPE-SC', 'MPJPE-PA']
         metrics += [metric + '_samples_min' for metric in metrics]
@@ -68,8 +77,11 @@ def run_evaluate(device,
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
+    # ------------------ Evaluate ------------------
+    torch.manual_seed(0)
+    np.random.seed(0)
     evaluate_pose_MF_shapeGaussian_net(pose_shape_model=pose_shape_dist_model,
-                                       pose_shape_config=pose_shape_cfg,
+                                       pose_shape_cfg=pose_shape_cfg,
                                        smpl_model=smpl_model,
                                        smpl_model_male=smpl_model_male,
                                        smpl_model_female=smpl_model_female,
@@ -85,7 +97,9 @@ def run_evaluate(device,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', '-D', type=str, choices=['3dpw', 'ssp3d'])
-    parser.add_argument('--num_samples', '-N', type=int, default=10)
+    parser.add_argument('--pose_shape_weights', '-W3D', type=str, default='./model_files/poseMF_shapeGaussian_net_weights.tar')
+    parser.add_argument('--pose_shape_cfg', type=str, default=None)
+    parser.add_argument('--num_samples', '-N', type=int, default=10, help='Number of samples to use for sample-based evaluation metrics.')
     parser.add_argument('--gpu', type=int, default=0)
     args = parser.parse_args()
 
@@ -96,6 +110,8 @@ if __name__ == '__main__':
 
     run_evaluate(device=device,
                  dataset_name=args.dataset,
+                 pose_shape_weights_path=args.pose_shape_weights,
+                 pose_shape_cfg_path=args.pose_shape_cfg,
                  num_samples_for_metrics=args.num_samples)
 
 

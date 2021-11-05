@@ -17,10 +17,10 @@ from utils.sampling_utils import compute_vertex_uncertainties_by_poseMF_shapeGau
 
 
 def predict_poseMF_shapeGaussian_net(pose_shape_model,
-                                     pose_shape_config,
+                                     pose_shape_cfg,
                                      smpl_model,
                                      hrnet_model,
-                                     hrnet_config,
+                                     hrnet_cfg,
                                      edge_detect_model,
                                      device,
                                      image_dir,
@@ -63,11 +63,11 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             image = torch.from_numpy(image.transpose(2, 0, 1)).float().to(device) / 255.0
             # Predict Person Bounding Box + 2D Joints
             hrnet_output = predict_hrnet(hrnet_model=hrnet_model,
-                                         hrnet_config=hrnet_config,
+                                         hrnet_config=hrnet_cfg,
                                          object_detect_model=object_detect_model,
                                          image=image,
-                                         object_detect_threshold=pose_shape_config.DATA.BBOX_THRESHOLD,
-                                         bbox_scale_factor=pose_shape_config.DATA.BBOX_SCALE_FACTOR)
+                                         object_detect_threshold=pose_shape_cfg.DATA.BBOX_THRESHOLD,
+                                         bbox_scale_factor=pose_shape_cfg.DATA.BBOX_SCALE_FACTOR)
 
             # Transform predicted 2D joints and image from HRNet input size to input proxy representation size
             hrnet_input_centre = torch.tensor([[hrnet_output['cropped_image'].shape[1],
@@ -77,8 +77,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             hrnet_input_height = torch.tensor([hrnet_output['cropped_image'].shape[1]],
                                               dtype=torch.float32,
                                               device=device)
-            cropped_for_proxy = batch_crop_pytorch_affine(input_wh=(hrnet_config.MODEL.IMAGE_SIZE[0], hrnet_config.MODEL.IMAGE_SIZE[1]),
-                                                          output_wh=(pose_shape_config.DATA.PROXY_REP_SIZE, pose_shape_config.DATA.PROXY_REP_SIZE),
+            cropped_for_proxy = batch_crop_pytorch_affine(input_wh=(hrnet_cfg.MODEL.IMAGE_SIZE[0], hrnet_cfg.MODEL.IMAGE_SIZE[1]),
+                                                          output_wh=(pose_shape_cfg.DATA.PROXY_REP_SIZE, pose_shape_cfg.DATA.PROXY_REP_SIZE),
                                                           num_to_crop=1,
                                                           device=device,
                                                           joints2D=hrnet_output['joints2D'][None, :, :],
@@ -90,10 +90,10 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
 
             # Create proxy representation with 1) Edge detection and 2) 2D joints heatmaps generation
             edge_detector_output = edge_detect_model(cropped_for_proxy['rgb'])
-            proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_config.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
+            proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_cfg.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
             proxy_rep_heatmaps = convert_2Djoints_to_gaussian_heatmaps_torch(joints2D=cropped_for_proxy['joints2D'],
-                                                                             img_wh=pose_shape_config.DATA.PROXY_REP_SIZE,
-                                                                             std=pose_shape_config.DATA.HEATMAP_GAUSSIAN_STD)
+                                                                             img_wh=pose_shape_cfg.DATA.PROXY_REP_SIZE,
+                                                                             std=pose_shape_cfg.DATA.HEATMAP_GAUSSIAN_STD)
             hrnet_joints2Dvisib = hrnet_output['joints2Dconfs'] > joints2Dvisib_threshold
             hrnet_joints2Dvisib[[0, 1, 2, 3, 4, 5, 6, 11, 12]] = True  # Only removing joints [7, 8, 9, 10, 13, 14, 15, 16] if occluded
             proxy_rep_heatmaps = proxy_rep_heatmaps * hrnet_joints2Dvisib[None, :, None, None]
@@ -246,8 +246,8 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             proxy_rep_input = np.stack([proxy_rep_input]*3, axis=-1)  # single-channel to RGB
             proxy_rep_input = cv2.resize(proxy_rep_input, (visualise_wh, visualise_wh))
             for joint_num in range(cropped_for_proxy['joints2D'].shape[1]):
-                hor_coord = cropped_for_proxy['joints2D'][0, joint_num, 0].item() * visualise_wh / pose_shape_config.DATA.PROXY_REP_SIZE
-                ver_coord = cropped_for_proxy['joints2D'][0, joint_num, 1].item() * visualise_wh / pose_shape_config.DATA.PROXY_REP_SIZE
+                hor_coord = cropped_for_proxy['joints2D'][0, joint_num, 0].item() * visualise_wh / pose_shape_cfg.DATA.PROXY_REP_SIZE
+                ver_coord = cropped_for_proxy['joints2D'][0, joint_num, 1].item() * visualise_wh / pose_shape_cfg.DATA.PROXY_REP_SIZE
                 cv2.circle(proxy_rep_input,
                            (int(hor_coord), int(ver_coord)),
                            radius=3,
@@ -281,7 +281,7 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
                 iuv_to_uncrop = body_vis_output['iuv_images'].permute(0, 3, 1, 2).contiguous().cpu().detach().numpy()
                 bbox_centres = hrnet_output['bbox_centre'][None].cpu().detach().numpy()
                 bbox_whs = torch.max(hrnet_output['bbox_height'], hrnet_output['bbox_width'])[None].cpu().detach().numpy()
-                bbox_whs *= pose_shape_config.DATA.BBOX_SCALE_FACTOR
+                bbox_whs *= pose_shape_cfg.DATA.BBOX_SCALE_FACTOR
                 uncropped_for_visualise = batch_crop_opencv_affine(output_wh=(visualise_wh, visualise_wh),
                                                                    num_to_crop=1,
                                                                    rgb=rgb_to_uncrop,
