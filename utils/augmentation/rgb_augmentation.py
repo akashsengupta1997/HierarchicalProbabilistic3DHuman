@@ -5,7 +5,7 @@ from torchgeometry.image.gaussian import gaussian_blur
 
 def random_occlude_bottom_half(rgb,
                                joints2D,
-                               joints2D_vis,
+                               joints2D_visib,
                                occlude_probability=0.05):
     batch_size = rgb.shape[0]
     wh = rgb.shape[-1]
@@ -18,14 +18,14 @@ def random_occlude_bottom_half(rgb,
 
             if joints2D is not None:
                 joints2D_to_occlude = joints2D[i, :, 1] > occlude_from
-                joints2D_vis[i, joints2D_to_occlude] = False
+                joints2D_visib[i, joints2D_to_occlude] = False
 
-    return rgb, joints2D, joints2D_vis
+    return rgb, joints2D, joints2D_visib
 
 
 def random_occlude_top_half(rgb,
                             joints2D,
-                            joints2D_vis,
+                            joints2D_visib,
                             occlude_probability=0.05):
     batch_size = rgb.shape[0]
     wh = rgb.shape[-1]
@@ -38,14 +38,14 @@ def random_occlude_top_half(rgb,
 
             if joints2D is not None:
                 joints2D_to_occlude = joints2D[i, :, 1] < occlude_up_to
-                joints2D_vis[i, joints2D_to_occlude] = False
+                joints2D_visib[i, joints2D_to_occlude] = False
 
-    return rgb, joints2D, joints2D_vis
+    return rgb, joints2D, joints2D_visib
 
 
 def random_occlude_vertical_half(rgb,
                                  joints2D,
-                                 joints2D_vis,
+                                 joints2D_visib,
                                  occlude_probability=0.05):
     batch_size = rgb.shape[0]
     wh = rgb.shape[-1]
@@ -63,9 +63,9 @@ def random_occlude_vertical_half(rgb,
                 if joints2D is not None:
                     joints2D_to_occlude = joints2D[i, :, 0] > occlude_up_to
             if joints2D is not None:
-                joints2D_vis[i, joints2D_to_occlude] = False
+                joints2D_visib[i, joints2D_to_occlude] = False
 
-    return rgb, joints2D, joints2D_vis
+    return rgb, joints2D, joints2D_visib
 
 
 def random_pixel_noise_per_channel(rgb,
@@ -91,32 +91,25 @@ def random_gaussian_blur(rgb,
 
 def augment_rgb(rgb,
                 joints2D,
-                joints2D_vis,
-                rgb_augment_params):
+                joints2D_visib,
+                rgb_augment_config):
 
-    if rgb_augment_params['apply_random_gaussian_blur']:
-        rgb = random_gaussian_blur(rgb=rgb,
-                                   sigma_range=rgb_augment_params['gaussian_blur_sigma_range'],
-                                   kernel_size=rgb_augment_params['gaussian_blur_kernel_size'])
-
-    if rgb_augment_params['occlude_bottom_half']:
-        rgb, joints2D, joints2D_vis = random_occlude_bottom_half(rgb=rgb,
+    # Occlude bottom/top/left halves of the image (body AND background)
+    rgb, joints2D, joints2D_visib = random_occlude_bottom_half(rgb=rgb,
+                                                               joints2D=joints2D,
+                                                               joints2D_visib=joints2D_visib,
+                                                               occlude_probability=rgb_augment_config.OCCLUDE_BOTTOM_PROB)
+    rgb, joints2D, joints2D_visib = random_occlude_top_half(rgb=rgb,
+                                                            joints2D=joints2D,
+                                                            joints2D_visib=joints2D_visib,
+                                                            occlude_probability=rgb_augment_config.OCCLUDE_TOP_PROB)
+    rgb, joints2D, joints2D_visib = random_occlude_vertical_half(rgb=rgb,
                                                                  joints2D=joints2D,
-                                                                 joints2D_vis=joints2D_vis,
-                                                                 occlude_probability=rgb_augment_params['occlude_bottom_half_probability'])
-    if 'occlude_top_half' in rgb_augment_params.keys():
-        if rgb_augment_params['occlude_top_half']:
-            rgb, joints2D, joints2D_vis = random_occlude_top_half(rgb=rgb,
-                                                                  joints2D=joints2D,
-                                                                  joints2D_vis=joints2D_vis,
-                                                                  occlude_probability=rgb_augment_params['occlude_top_half_probability'])
-    if rgb_augment_params['occlude_vertical_half']:
-        rgb, joints2D, joints2D_vis = random_occlude_vertical_half(rgb=rgb,
-                                                                   joints2D=joints2D,
-                                                                   joints2D_vis=joints2D_vis,
-                                                                   occlude_probability=rgb_augment_params['occlude_vertical_half_probability'])
-    if rgb_augment_params['add_per_channel_pixel_noise']:
-        rgb = random_pixel_noise_per_channel(rgb=rgb,
-                                             per_channel_pixel_noise_factor=rgb_augment_params['per_channel_pixel_noise_factor'])
+                                                                 joints2D_visib=joints2D_visib,
+                                                                 occlude_probability=rgb_augment_config.OCCLUDE_VERTICAL_PROB)
 
-    return rgb, joints2D, joints2D_vis
+    # Per channel (RGB) pixel noise
+    rgb = random_pixel_noise_per_channel(rgb=rgb,
+                                         per_channel_pixel_noise_factor=rgb_augment_config.PIXEL_CHANNEL_NOISE)
+
+    return rgb, joints2D, joints2D_visib
