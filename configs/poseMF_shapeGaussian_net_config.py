@@ -106,4 +106,6 @@ _C.LOSS.STAGE2.WEIGHTS.GLOB_ROTMATS = 5000.0
 _C.LOSS.STAGE1.WEIGHTS.VERTS3D = 5000.0
 _C.LOSS.STAGE1.WEIGHTS.JOINTS3D = 5000.0
 
-config = _C
+
+def get_poseMF_shapeGaussian_cfg_defaults():
+    return _C.clone()
