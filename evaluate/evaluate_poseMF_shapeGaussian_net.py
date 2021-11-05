@@ -17,7 +17,7 @@ from utils.sampling_utils import pose_matrix_fisher_sampling_torch
 
 
 def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
-                                       pose_shape_config,
+                                       pose_shape_cfg,
                                        smpl_model,
                                        smpl_model_male,
                                        smpl_model_female,
@@ -49,7 +49,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
     if any('silhouette' in metric for metric in metrics):
         silhouette_renderer = TexturedIUVRenderer(device=device,
                                                   batch_size=1,
-                                                  img_wh=pose_shape_config.DATA.PROXY_REP_SIZE,
+                                                  img_wh=pose_shape_cfg.DATA.PROXY_REP_SIZE,
                                                   projection_type='orthographic',
                                                   render_rgb=False,
                                                   bin_size=32)
@@ -67,7 +67,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
             image = samples_batch['image'].to(device)
             heatmaps = samples_batch['heatmaps'].to(device)
             edge_detector_output = edge_detect_model(image)
-            proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_config.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
+            proxy_rep_img = edge_detector_output['thresholded_thin_edges'] if pose_shape_cfg.DATA.EDGE_NMS else edge_detector_output['thresholded_grad_magnitude']
             proxy_rep_input = torch.cat([proxy_rep_img, heatmaps], dim=1)
 
             # ------------------ Targets ------------------
@@ -139,7 +139,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                                                                              angles=np.pi,
                                                                              translations=torch.zeros(3, device=device).float())
                 pred_joints2d_coco_mode = orthographic_project_torch(pred_joints_coco_mode, pred_cam_wp)  # (1, 17, 2)
-                pred_joints2d_coco_mode = undo_keypoint_normalisation(pred_joints2d_coco_mode, pose_shape_config.DATA.PROXY_REP_SIZE)
+                pred_joints2d_coco_mode = undo_keypoint_normalisation(pred_joints2d_coco_mode, pose_shape_cfg.DATA.PROXY_REP_SIZE)
             if any('silhouette' in metric for metric in metrics):
                 pred_vertices_flipped_mode = aa_rotate_translate_points_pytorch3d(points=pred_vertices_mode,
                                                                                   axes=torch.tensor([1., 0., 0.], device=device),
@@ -187,7 +187,7 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
                                                                                     angles=np.pi,
                                                                                     translations=torch.zeros(3, device=device).float())
                     pred_joints2d_coco_samples = orthographic_project_torch(pred_joints_coco_samples, pred_cam_wp)  # (num samples, 17, 2)
-                    pred_joints2d_coco_samples = undo_keypoint_normalisation(pred_joints2d_coco_samples, pose_shape_config.DATA.PROXY_REP_SIZE)
+                    pred_joints2d_coco_samples = undo_keypoint_normalisation(pred_joints2d_coco_samples, pose_shape_cfg.DATA.PROXY_REP_SIZE)
 
                 if 'silhouettesamples-IOU' in metrics:
                     pred_silhouette_samples = []
