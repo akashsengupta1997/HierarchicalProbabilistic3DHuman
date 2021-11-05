@@ -247,16 +247,12 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
     if save_per_frame_metrics:
         fname_per_frame = np.concatenate(fname_per_frame, axis=0)
         np.save(os.path.join(save_path, 'fname_per_frame.npy'), fname_per_frame)
-        print(fname_per_frame.shape)
 
         pose_per_frame = np.concatenate(pose_per_frame, axis=0)
         np.save(os.path.join(save_path, 'pose_per_frame.npy'), pose_per_frame)
-        print(pose_per_frame.shape)
 
         shape_per_frame = np.concatenate(shape_per_frame, axis=0)
         np.save(os.path.join(save_path, 'shape_per_frame.npy'), shape_per_frame)
-        print(shape_per_frame.shape)
 
         cam_per_frame = np.concatenate(cam_per_frame, axis=0)
         np.save(os.path.join(save_path, 'cam_per_frame.npy'), cam_per_frame)
-        print(cam_per_frame.shape)
