@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', '-S', type=str, help='Path to directory where test outputs will be saved.')
     parser.add_argument('--pose_shape_weights', '-W3D', type=str, default='./model_files/poseMF_shapeGaussian_net_weights.tar')
     parser.add_argument('--pose_shape_cfg', type=str, default=None)
-    parser.add_argument('--pose2D_hrnet_weights', '-W3D', type=str, default='./model_files/pose_hrnet_w48_384x288.pth')
+    parser.add_argument('--pose2D_hrnet_weights', '-W2D', type=str, default='./model_files/pose_hrnet_w48_384x288.pth')
     parser.add_argument('--cropped_images', '-C', action='store_true', help='Images already cropped and centred.')
     parser.add_argument('--visualise_samples', '-VS', action='store_true')
     parser.add_argument('--visualise_uncropped', '-VU', action='store_true')
