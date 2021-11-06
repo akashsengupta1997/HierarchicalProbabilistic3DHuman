@@ -140,14 +140,14 @@ class TrainingLossesAndMetricsTracker:
         # Reposed
         if 'PVE-T' in self.metrics_to_track:
             pvet_batch = np.linalg.norm(pred_reposed_vertices - target_reposed_vertices, axis=-1)
-            self.loss_metric_sums[split + 'PVE-T'] += np.sum(pvet_batch)
+            self.loss_metric_sums[split + '_PVE-T'] += np.sum(pvet_batch)
 
         # Reposed + Scale and translation correction
         if 'PVE-T-SC' in self.metrics_to_track:
             pred_reposed_vertices_sc = scale_and_translation_transform_batch(pred_reposed_vertices,
                                                                              target_reposed_vertices)
             pvet_sc_batch = np.linalg.norm(pred_reposed_vertices_sc - target_reposed_vertices, axis=-1)  # (bs, 6890)
-            self.loss_metric_sums[split + 'PVE-T-SC'] += np.sum(pvet_sc_batch)  # scalar
+            self.loss_metric_sums[split + '_PVE-T-SC'] += np.sum(pvet_sc_batch)  # scalar
 
         if 'MPJPE' in self.metrics_to_track:
             mpjpe_batch = np.linalg.norm(pred_dict['joints3D'] - target_dict['joints3D'], axis=-1)  # (bsize, 14) or (bsize, num views, 14)
