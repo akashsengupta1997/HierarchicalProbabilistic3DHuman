@@ -86,7 +86,7 @@ def train_poseMF_shapeGaussian_net(pose_shape_model,
                                         device=device, dtype=torch.float32) * pose_shape_cfg.TRAIN.SYNTH_DATA.AUGMENT.SMPL.SHAPE_STD
     mean_shape = torch.zeros(pose_shape_cfg.MODEL.NUM_SMPL_BETAS,
                              device=device, dtype=torch.float32)
-    mean_cam_t = torch.tensor(pose_shape_cfg.SYNTH_DATA.MEAN_CAM_T,
+    mean_cam_t = torch.tensor(pose_shape_cfg.TRAIN.SYNTH_DATA.MEAN_CAM_T,
                               device=device, dtype=torch.float32)
     mean_cam_t = mean_cam_t[None, :].expand(pose_shape_cfg.TRAIN.BATCH_SIZE, -1)
 
