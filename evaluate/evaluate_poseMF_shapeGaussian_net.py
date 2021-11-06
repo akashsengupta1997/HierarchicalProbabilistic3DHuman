@@ -10,7 +10,7 @@ from renderers.pytorch3d_textured_renderer import TexturedIUVRenderer
 from metrics.eval_metrics_tracker import EvalMetricsTracker
 
 from utils.cam_utils import orthographic_project_torch
-from utils.rigid_transform_utils import rot6d_to_rotmat, aa_rotate_translate_points_pytorch3d, rotate_global_pose_rotmats_torch
+from utils.rigid_transform_utils import rot6d_to_rotmat, aa_rotate_translate_points_pytorch3d, aa_rotate_rotmats
 from utils.joints2d_utils import undo_keypoint_normalisation
 from utils.label_conversions import convert_multiclass_to_binary_labels, ALL_JOINTS_TO_COCO_MAP, ALL_JOINTS_TO_H36M_MAP, H36M_TO_J14
 from utils.sampling_utils import pose_matrix_fisher_sampling_torch
@@ -82,11 +82,11 @@ def evaluate_pose_MF_shapeGaussian_net(pose_shape_model,
 
             # Flipping pose targets such that they are right way up in 3D space - i.e. wrong way up when projected
             target_pose_rotmats = batch_rodrigues(target_pose.contiguous().view(-1, 3)).view(-1, 24, 3, 3)
-            target_glob_rotmats = target_pose_rotmats[:, [0], :, :]
-            target_glob_vecs, _ = rotate_global_pose_rotmats_torch(axis=[1, 0, 0],
-                                                                   angle=np.pi,
-                                                                   glob_rotmats=target_glob_rotmats,
-                                                                   rot_mult_order='pre')
+            target_glob_rotmats = target_pose_rotmats[:, 0, :, :]
+            target_glob_vecs, _ = aa_rotate_rotmats(rotmats=target_glob_rotmats,
+                                                    axis=[1, 0, 0],
+                                                    angle=np.pi,
+                                                    rot_mult_order='pre')
             target_pose[:, :3] = target_glob_vecs
 
             if target_gender == 'm':

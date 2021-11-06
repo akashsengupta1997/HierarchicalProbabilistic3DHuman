@@ -11,9 +11,10 @@ except ImportError:
 def aa_rotate_rotmats_pytorch3d(rotmats, axes, angles, rot_mult_order='post'):
     """
     Batched rotation of rotation matrices about given axes and angles.
-    :param rotmats: (B,3,3), batch of rotation matrices
-    :param axes: (B,3) or (3,), rotation axes (may be batched)
-    :param angles: (B,1) or scalar, rotation angles in radians (may be batched)
+
+    :param rotmats: (B, 3, 3), batch of rotation matrices
+    :param axes: (B, 3) or (3,), rotation axes (may be batched)
+    :param angles: (B, 1) or scalar, rotation angles in radians (may be batched)
     :return: rotated_rotvecs (B, 3) and rotated_rotmats (B, 3, 3)
     """
     assert rot_mult_order in ['pre', 'post']
@@ -30,26 +31,26 @@ def aa_rotate_rotmats_pytorch3d(rotmats, axes, angles, rot_mult_order='post'):
     return rotated_rotvecs, rotated_rotmats
 
 
-def rotate_global_pose_rotmats_torch(axis, angle, glob_rotmats, rot_mult_order='post'):
+def aa_rotate_rotmats(axis, angle, rotmats, rot_mult_order='post'):
     """
-    TODO refactor to make similar to aa_rotate_rotmats_pytorch3d
     This does the same thing as aa_rotate_rotmats_pytorch3d, except using openCV instead of pytorch3d.
-    This is preferred when computing rotation rotation vectors (SO(3) log map) because pytorch3d's
+    This is preferred when computing rotated rotation vectors (SO(3) log map) because pytorch3d's
     SO(3) log map is broken for R = I.
     However pytorch3d function is batched and only requires torch, so should be faster - use when
-    rotation vectors are not needed.
+    rotation vectors are not needed (e.g. during training).
+
+    :param rotmats: (B, 3, 3), batch of rotation matrices
     :param axis: (3, ) numpy array, axis of rotation
     :param angle: scalar, angle of rotation
-    :param glob_rotmats: (B,1,3,3)
     :return: rotated_vecs (B, 3) and rotated_rotmats (B, 3, 3)
     """
     assert rot_mult_order in ['pre', 'post']
     R = cv2.Rodrigues(np.array(axis)*angle)[0]
-    glob_rotmats = glob_rotmats.cpu().detach().numpy()[:, 0, :, :]
+    rotmats = rotmats.cpu().detach().numpy()
     if rot_mult_order == 'post':
-        rotated_rotmats = np.matmul(glob_rotmats, R)
+        rotated_rotmats = np.matmul(rotmats, R)
     elif rot_mult_order == 'pre':
-        rotated_rotmats = np.matmul(R, glob_rotmats)
+        rotated_rotmats = np.matmul(R, rotmats)
     rotated_vecs = []
     for i in range(rotated_rotmats.shape[0]):
         rotated_vecs.append(cv2.Rodrigues(rotated_rotmats[i, :, :])[0].squeeze())
