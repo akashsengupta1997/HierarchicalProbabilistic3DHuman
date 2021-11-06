@@ -86,7 +86,7 @@ def train_poseMF_shapeGaussian_net(pose_shape_model,
                                         device=device, dtype=torch.float32) * pose_shape_cfg.TRAIN.SYNTH_DATA.AUGMENT.SMPL.SHAPE_STD
     mean_shape = torch.zeros(pose_shape_cfg.MODEL.NUM_SMPL_BETAS,
                              device=device, dtype=torch.float32)
-    mean_cam_t = torch.tensor(pose_shape_cfg.SYNTH_DATA.MEAN_CAM_T,
+    mean_cam_t = torch.tensor(pose_shape_cfg.TRAIN.SYNTH_DATA.MEAN_CAM_T,
                               device=device, dtype=torch.float32)
     mean_cam_t = mean_cam_t[None, :].expand(pose_shape_cfg.TRAIN.BATCH_SIZE, -1)
 
@@ -286,12 +286,14 @@ def train_poseMF_shapeGaussian_net(pose_shape_model,
                                      j,
                                      fontsize=9)
                         subplot_count += 1
-                        plt.subplot(3,2,subplot_count)
+
+                        plt.subplot(3, 6, subplot_count)
                         plt.scatter(target_vertices[i, :, 0].detach().cpu().numpy(),
                                     target_vertices[i, :, 1].detach().cpu().numpy(),
                                     s=0.01)
                         plt.gca().set_aspect('equal', adjustable='box')
                         subplot_count += 1
+
                     plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
                                         hspace=0, wspace=0)
                     plt.margins(0, 0)
