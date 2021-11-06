@@ -241,13 +241,12 @@ class PoseMFShapeGaussianLoss(nn.Module):
         super(PoseMFShapeGaussianLoss, self).__init__()
 
         self.loss_config = loss_config
-        print('\nLoss config\n:', self.loss_config)
 
         self.img_wh = img_wh
-        self.joints2D_loss = nn.MSELoss(reduction=loss_config.LOSS.REDUCTION)
-        self.glob_rotmats_loss = nn.MSELoss(reduction=loss_config.LOSS.REDUCTION)
-        self.verts3D_loss = nn.MSELoss(reduction=loss_config.LOSS.REDUCTION)
-        self.joints3D_loss = nn.MSELoss(reduction=loss_config.LOSS.REDUCTION)
+        self.joints2D_loss = nn.MSELoss(reduction=loss_config.REDUCTION)
+        self.glob_rotmats_loss = nn.MSELoss(reduction=loss_config.REDUCTION)
+        self.verts3D_loss = nn.MSELoss(reduction=loss_config.REDUCTION)
+        self.joints3D_loss = nn.MSELoss(reduction=loss_config.REDUCTION)
 
     def forward(self, target_dict, pred_dict):
 
