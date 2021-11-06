@@ -40,7 +40,6 @@ class TrainingLossesAndMetricsTracker:
                 self.epochs_history[metric_type] = []
 
         self.loss_metric_sums = None
-        print('Metrics tracker initialised.')
 
     def load_history(self, load_log_path, current_epoch):
         """

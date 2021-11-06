@@ -147,7 +147,7 @@ class TexturedIUVRenderer(nn.Module):
 
         # Cameras - pre-defined here but can be specified in forward pass if cameras will vary (e.g. random cameras)
         assert projection_type in ['perspective', 'orthographic'], print('Invalid projection type:', projection_type)
-        print('Renderer projection type:', projection_type)
+        print('\nRenderer projection type:', projection_type)
         self.projection_type = projection_type
         if cam_R is None:
             # Rotating 180° about z-axis to make pytorch3d camera convention same as what I've been using so far in my perspective_project_torch/NMR/pyrender

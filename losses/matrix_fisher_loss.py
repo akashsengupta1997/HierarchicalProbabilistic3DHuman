@@ -257,16 +257,16 @@ class PoseMFShapeGaussianLoss(nn.Module):
                                      pred_V=pred_dict['pose_params_V'],
                                      target_R=target_dict['pose_params_rotmats'],
                                      overreg=self.loss_config.MF_OVERREG)
-        if self.loss_config.LOSS.REDUCTION == 'mean':
+        if self.loss_config.REDUCTION == 'mean':
             pose_nll = torch.mean(pose_nll)
-        elif self.loss_config.LOSS.REDUCTION == 'sum':
+        elif self.loss_config.REDUCTION == 'sum':
             pose_nll = torch.sum(pose_nll)
 
         # Shape NLL
         shape_nll = -(pred_dict['shape_params'].log_prob(target_dict['shape_params']).sum(dim=1))  # (batch_size,)
-        if self.loss_config.LOSS.REDUCTION == 'mean':
+        if self.loss_config.REDUCTION == 'mean':
             shape_nll = torch.mean(shape_nll)
-        elif self.loss_config.LOSS.REDUCTION == 'sum':
+        elif self.loss_config.REDUCTION == 'sum':
             shape_nll = torch.sum(shape_nll)
 
         # Joints2D MSE

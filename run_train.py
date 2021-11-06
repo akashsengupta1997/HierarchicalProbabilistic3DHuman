@@ -36,7 +36,7 @@ def run_train(device,
         if not os.path.exists(model_save_dir):
             os.makedirs(model_save_dir)
         else:
-            print('{} already exists - may be overwriting previous experiments!'.format(experiment_dir))
+            print('\nWARNING: {} already exists - may be overwriting previous experiments!'.format(experiment_dir))
         if pose_shape_cfg_opts is not None:
             pose_shape_cfg.merge_from_list(pose_shape_cfg_opts)
         with open(config_save_path, 'w') as f:
@@ -49,7 +49,7 @@ def run_train(device,
         pose_shape_cfg.merge_from_file(config_save_path)
         print('\nResuming from:', checkpoint_path)
 
-    print(pose_shape_cfg)
+    print('\n', pose_shape_cfg)
     # ------------------------- Datasets -------------------------
     train_dataset = OnTheFlySMPLTrainDataset(poses_path=paths.TRAIN_POSES_PATH,
                                              textures_path=paths.TRAIN_TEXTURES_PATH,
@@ -68,7 +68,7 @@ def run_train(device,
     print("Training backgrounds found:", len(train_dataset.backgrounds_paths))
     print("Validation poses found:", len(val_dataset))
     print("Validation textures found (grey, nongrey):", len(val_dataset.grey_textures), len(val_dataset.nongrey_textures))
-    print("Validation backgrounds found:", len(val_dataset.backgrounds_paths))
+    print("Validation backgrounds found:", len(val_dataset.backgrounds_paths), '\n')
 
     # ------------------------- Models -------------------------
     # Edge detector
