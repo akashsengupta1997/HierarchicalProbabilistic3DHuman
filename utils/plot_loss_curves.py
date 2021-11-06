@@ -18,16 +18,15 @@ def plot_loss_curves(exp_dirs,
     plt.ylabel(to_plot)
 
     log_paths_to_plot = [os.path.join(exp_dir, 'log.pkl') for exp_dir in exp_dirs]
-    legend = list(zip(['train_' + os.path.basename(exp_dir) for exp_dir in exp_dirs],
-                      ['val_' + os.path.basename(exp_dir) for exp_dir in exp_dirs]))
+    legend = [label for pair in zip(['train_' + os.path.basename(exp_dir) for exp_dir in exp_dirs],
+                                    ['val_' + os.path.basename(exp_dir) for exp_dir in exp_dirs])
+              for label in pair]
 
     for log_path in log_paths_to_plot:
         with open(log_path, 'rb') as f:
             log_data = pickle.load(f)
-        train_log = log_data['train_' + to_plot]
-        plt.plot(train_log)
-        val_log = log_data['val_' + to_plot]
-        plt.plot(val_log)
+        plt.plot(log_data['train_' + to_plot])
+        plt.plot(log_data['val_' + to_plot])
 
     plt.legend(legend)
     plt.show()
