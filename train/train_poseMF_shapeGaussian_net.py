@@ -255,58 +255,6 @@ def train_poseMF_shapeGaussian_net(pose_shape_model,
                     # Concatenate edge-image and 2D joint heatmaps to create input proxy representation
                     proxy_rep_input = torch.cat([edge_in, j2d_heatmaps], dim=1).float()  # (batch_size, C, img_wh, img_wh)
 
-                    import matplotlib
-                    matplotlib.use('tkagg')
-                    import matplotlib.pyplot as plt
-                    plt.figure(dpi=300)
-                    subplot_count = 1
-                    for i in [1, 2, 3, 10, 20, 30, 50, 60, 70]:
-                        plt.subplot(3, 6, subplot_count)
-                        plt.gca().axis('off')
-                        heatmaps_to_plot = np.sum(proxy_rep_input[i, -17:, :, :].detach().cpu().numpy(), axis=0)
-                        image_to_plot = np.transpose(proxy_rep_input[i, :-17, :, :].detach().cpu().numpy(), [1, 2, 0])
-                        image_to_plot = image_to_plot + heatmaps_to_plot[:, :, None]
-                        plt.imshow(image_to_plot)
-
-                        j2d_vis_colours = 0. + target_joints2d_visib_coco[i].cpu().detach().numpy().astype(np.float32)
-                        plt.scatter(target_joints2d_coco[i, :, 0].detach().cpu().numpy(),
-                                    target_joints2d_coco[i, :, 1].detach().cpu().numpy(),
-                                    s=0.1,
-                                    c=j2d_vis_colours)
-                        plt.scatter(target_joints2d_coco_input[i, :, 0].detach().cpu().numpy(),
-                                    target_joints2d_coco_input[i, :, 1].detach().cpu().numpy(),
-                                    s=0.1,
-                                    c='green')
-                        for j in range(target_joints2d_coco.shape[1]):
-                            plt.text(target_joints2d_coco[i, j, 0].detach().cpu().numpy(),
-                                     target_joints2d_coco[i, j, 1].detach().cpu().numpy(),
-                                     j,
-                                     fontsize=3)
-                            plt.text(target_joints2d_coco_input[i, j, 0].detach().cpu().numpy(),
-                                     target_joints2d_coco_input[i, j, 1].detach().cpu().numpy(),
-                                     j,
-                                     fontsize=3)
-                        subplot_count += 1
-
-                        plt.subplot(3, 6, subplot_count)
-                        plt.gca().axis('off')
-                        plt.scatter(target_vertices[i, :, 0].detach().cpu().numpy(),
-                                    target_vertices[i, :, 1].detach().cpu().numpy(),
-                                    s=0.01)
-                        plt.gca().set_aspect('equal', adjustable='box')
-                        subplot_count += 1
-
-                    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
-                                        hspace=0, wspace=0)
-                    plt.margins(0, 0)
-                    plt.gca().xaxis.set_major_locator(plt.NullLocator())
-                    plt.gca().yaxis.set_major_locator(plt.NullLocator())
-                    plt.show()
-                    matplotlib.use('agg')
-                    if batch_num == 2:
-                        break
-
-
                 with torch.set_grad_enabled(split == 'train'):
                     #############################################################
                     # ---------------------- FORWARD PASS -----------------------
