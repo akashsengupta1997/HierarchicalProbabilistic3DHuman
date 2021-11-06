@@ -55,13 +55,11 @@ def run_train(device,
                                              textures_path=paths.TRAIN_TEXTURES_PATH,
                                              backgrounds_dir_path=paths.TRAIN_BACKGROUNDS_PATH,
                                              params_from='all',
-                                             grey_tex_prob=0.05,
                                              img_wh=pose_shape_cfg.DATA.PROXY_REP_SIZE)
     val_dataset = OnTheFlySMPLTrainDataset(poses_path=paths.VAL_POSES_PATH,
                                            textures_path=paths.VAL_TEXTURES_PATH,
                                            backgrounds_dir_path=paths.VAL_BACKGROUNDS_PATH,
                                            params_from='all',
-                                           grey_tex_prob=0.05,
                                            img_wh=pose_shape_cfg.DATA.PROXY_REP_SIZE)
     print("\nTraining poses found:", len(train_dataset))
     print("Training textures found (grey, nongrey):", len(train_dataset.grey_textures), len(train_dataset.nongrey_textures))

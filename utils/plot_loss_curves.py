@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--to_plot', type=str)
     parser.add_argument('--exp_dirs', type=str, nargs='*')
     args = parser.parse_args()
-    print(args.exp_dirs)
+
     plot_loss_curves(exp_dirs=args.exp_dirs,
                      to_plot=args.to_plot)
 
