@@ -117,7 +117,7 @@ class TrainingLossesAndMetricsTracker:
         # -------- Update metrics sums --------
         if 'PVE' in self.metrics_to_track:
             pve_batch = np.linalg.norm(pred_dict['verts'] - target_dict['verts'], axis=-1)  # (bsize, 6890) or (bsize, num views, 6890)
-            self.loss_metric_sums[split + '_pves'] += np.sum(pve_batch)  # scalar
+            self.loss_metric_sums[split + '_PVE'] += np.sum(pve_batch)  # scalar
 
         # Scale and translation correction
         if 'PVE-SC' in self.metrics_to_track:
@@ -126,7 +126,7 @@ class TrainingLossesAndMetricsTracker:
             pred_vertices_sc = scale_and_translation_transform_batch(pred_vertices.reshape(-1, 6890, 3),
                                                                      target_vertices.reshape(-1, 6890, 3))
             pve_sc_batch = np.linalg.norm(pred_vertices_sc - target_vertices.reshape(-1, 6890, 3), axis=-1)  # (bsize, 6890) or (bsize*num views, 6890)
-            self.loss_metric_sums[split + '_pves_sc'] += np.sum(pve_sc_batch)  # scalar
+            self.loss_metric_sums[split + '_PVE-SC'] += np.sum(pve_sc_batch)  # scalar
 
         # Procrustes analysis
         if 'PVE-PA' in self.metrics_to_track:
@@ -135,23 +135,23 @@ class TrainingLossesAndMetricsTracker:
             pred_vertices_pa = procrustes_analysis_batch(pred_vertices.reshape(-1, 6890, 3),
                                                          target_vertices.reshape(-1, 6890, 3))
             pve_pa_batch = np.linalg.norm(pred_vertices_pa - target_vertices.reshape(-1, 6890, 3), axis=-1)  # (bsize, 6890) or (bsize*num views, 6890)
-            self.loss_metric_sums[split + '_pves_pa'] += np.sum(pve_pa_batch)  # scalar
+            self.loss_metric_sums[split + '_PVE-PA'] += np.sum(pve_pa_batch)  # scalar
 
         # Reposed
         if 'PVE-T' in self.metrics_to_track:
             pvet_batch = np.linalg.norm(pred_reposed_vertices - target_reposed_vertices, axis=-1)
-            self.loss_metric_sums[split + '_pve-ts'] += np.sum(pvet_batch)
+            self.loss_metric_sums[split + 'PVE-T'] += np.sum(pvet_batch)
 
         # Reposed + Scale and translation correction
         if 'PVE-T-SC' in self.metrics_to_track:
             pred_reposed_vertices_sc = scale_and_translation_transform_batch(pred_reposed_vertices,
                                                                              target_reposed_vertices)
             pvet_sc_batch = np.linalg.norm(pred_reposed_vertices_sc - target_reposed_vertices, axis=-1)  # (bs, 6890)
-            self.loss_metric_sums[split + '_pve-ts_sc'] += np.sum(pvet_sc_batch)  # scalar
+            self.loss_metric_sums[split + 'PVE-T-SC'] += np.sum(pvet_sc_batch)  # scalar
 
         if 'MPJPE' in self.metrics_to_track:
             mpjpe_batch = np.linalg.norm(pred_dict['joints3D'] - target_dict['joints3D'], axis=-1)  # (bsize, 14) or (bsize, num views, 14)
-            self.loss_metric_sums[split + '_mpjpes'] += np.sum(mpjpe_batch)  # scalar
+            self.loss_metric_sums[split + '_MPJPE'] += np.sum(mpjpe_batch)  # scalar
 
         # Scale and translation correction
         if 'MPJPE-SC' in self.metrics_to_track:
@@ -161,7 +161,7 @@ class TrainingLossesAndMetricsTracker:
                                                                              target_joints3D_h36mlsp.reshape(-1, 14, 3))
             mpjpe_sc_batch = np.linalg.norm(pred_joints3D_h36mlsp_sc - target_joints3D_h36mlsp.reshape(-1, 14, 3),
                                             axis=-1)  # (bsize, 14) or (bsize*num views, 14)
-            self.loss_metric_sums[split + '_mpjpes_sc'] += np.sum(mpjpe_sc_batch)  # scalar
+            self.loss_metric_sums[split + '_MPJPE-SC'] += np.sum(mpjpe_sc_batch)  # scalar
 
         # Procrustes analysis
         if 'MPJPE-PA' in self.metrics_to_track:
@@ -171,14 +171,14 @@ class TrainingLossesAndMetricsTracker:
                                                                  target_joints3D_h36mlsp.reshape(-1, 14, 3))
             mpjpe_pa_batch = np.linalg.norm(pred_joints3D_h36mlsp_pa - target_joints3D_h36mlsp.reshape(-1, 14, 3),
                                             axis=-1)  # (bsize, 14) or (bsize*num views, 14)
-            self.loss_metric_sums[split + '_mpjpes_pa'] += np.sum(mpjpe_pa_batch)  # scalar
+            self.loss_metric_sums[split + '_MPJPE-PA'] += np.sum(mpjpe_pa_batch)  # scalar
 
         if 'joints2D-L2E' in self.metrics_to_track:
             pred_joints2D_coco = pred_dict['joints2D'] # (bsize, 17, 2) or (bsize, num views, 17, 2)
             target_joints2D_coco = target_dict['joints2D']  # (bsize, 17, 2) or (bsize, num views, 17, 2)
             pred_joints2D_coco = undo_keypoint_normalisation(pred_joints2D_coco, self.img_wh)
             joints2D_l2e_batch = np.linalg.norm(pred_joints2D_coco - target_joints2D_coco, axis=-1)  # (bsize, 17) or (bsize, num views, 17)
-            self.loss_metric_sums[split + '_joints2D_l2es'] += np.sum(joints2D_l2e_batch)  # scalar
+            self.loss_metric_sums[split + '_joints2D-L2E'] += np.sum(joints2D_l2e_batch)  # scalar
 
         if 'joints2Dsamples-L2E' in self.metrics_to_track:
             pred_joints2D_coco_samples = pred_dict['joints2Dsamples']  # (bsize, num_samples, 17, 2)
