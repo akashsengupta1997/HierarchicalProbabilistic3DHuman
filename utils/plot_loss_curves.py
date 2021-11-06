@@ -18,8 +18,8 @@ def plot_loss_curves(exp_dirs,
     plt.ylabel(to_plot)
 
     log_paths_to_plot = [os.path.join(exp_dir, 'log.pkl') for exp_dir in exp_dirs]
-    legend = [label for pair in zip(['train_' + os.path.basename(exp_dir) for exp_dir in exp_dirs],
-                                    ['val_' + os.path.basename(exp_dir) for exp_dir in exp_dirs])
+    legend = [label for pair in zip(['train_' + os.path.basename(os.path.normpath(exp_dir)) for exp_dir in exp_dirs],
+                                    ['val_' + os.path.basename(os.path.normpath(exp_dir)) for exp_dir in exp_dirs])
               for label in pair]
 
     for log_path in log_paths_to_plot:
