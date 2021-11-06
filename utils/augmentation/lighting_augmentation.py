@@ -51,15 +51,15 @@ def augment_light_colour(batch_size, device,
 
 def augment_light(batch_size,
                   device,
-                  light_augment_params):
+                  rgb_augment_config):
     light_t = augment_light_t(batch_size=batch_size,
                               device=device,
-                              loc_r_range=light_augment_params['loc_r_range'])
+                              loc_r_range=rgb_augment_config.LIGHT_LOC_RANGE)
     ambient, diffuse, specular = augment_light_colour(batch_size=batch_size,
                                                       device=device,
-                                                      ambient_intensity_range=light_augment_params['ambient_intensity_range'],
-                                                      diffuse_intensity_range=light_augment_params['diffuse_intensity_range'],
-                                                      specular_intensity_range=light_augment_params['specular_intensity_range'])
+                                                      ambient_intensity_range=rgb_augment_config.LIGHT_AMBIENT_RANGE,
+                                                      diffuse_intensity_range=rgb_augment_config.LIGHT_DIFFUSE_RANGE,
+                                                      specular_intensity_range=rgb_augment_config.LIGHT_SPECULAR_RANGE)
     lights_settings = {'location': light_t,
                        'ambient_color': ambient,
                        'diffuse_color': diffuse,

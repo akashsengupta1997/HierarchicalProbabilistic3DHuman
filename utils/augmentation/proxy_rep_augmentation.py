@@ -24,18 +24,21 @@ def random_joints2D_deviation(joints2D, delta_j2d_dev_range=[-5, 5], delta_j2d_h
     return joints2D
 
 
-def random_remove_bodyparts(seg, classes_to_remove, probabilities_to_remove,
-                            joints2D_vis=None, probability_to_remove_joints=0.5):
+def random_remove_bodyparts(seg,
+                            classes_to_remove,
+                            probabilities_to_remove_classes,
+                            joints2D_visib,
+                            probability_to_remove_joints):
     """
     :param seg: (bs, wh, wh)
-    :param joints2D_vis: None or (bs, 17)
+    :param joints2D_visib: (bs, 17)
     """
-    assert len(classes_to_remove) == len(probabilities_to_remove)
+    assert len(classes_to_remove) == len(probabilities_to_remove_classes)
 
     batch_size = seg.shape[0]
     for i in range(len(classes_to_remove)):
         class_to_remove = classes_to_remove[i]
-        prob_to_remove = probabilities_to_remove[i]
+        prob_to_remove = probabilities_to_remove_classes[i]
 
         # Determine which samples to augment (by removing class_to_remove) in the batch
         rand_vec = np.random.rand(batch_size) < prob_to_remove
@@ -44,25 +47,27 @@ def random_remove_bodyparts(seg, classes_to_remove, probabilities_to_remove,
         samples_to_augment[samples_to_augment == class_to_remove] = 0
         seg[rand_vec] = samples_to_augment
 
-        if joints2D_vis is not None:
+        if joints2D_visib is not None:
             if class_to_remove in TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP.keys():
                 joint_to_remove = TWENTYFOUR_PART_SEG_TO_COCO_JOINTS_MAP[class_to_remove]
 
                 # Determine which samples with removed class_to_remove will also have joints removed
                 rand_vec_joints = np.random.rand(batch_size) < probability_to_remove_joints
                 rand_vec_joints = np.logical_and(rand_vec, rand_vec_joints)  # Samples with removed class_to_remove AND removed corresponding joints
-                joints2D_vis[rand_vec_joints, joint_to_remove] = 0
+                joints2D_visib[rand_vec_joints, joint_to_remove] = 0
 
-    return seg, joints2D_vis
+    return seg, joints2D_visib
 
 
-def random_remove_joints2D(joints2D_vis, joints_to_remove, probability_to_remove=0.1):
-    batch_size = joints2D_vis.shape[0]
+def random_remove_joints2D(joints2D_visib,
+                           joints_to_remove,
+                           probability_to_remove=0.1):
+    batch_size = joints2D_visib.shape[0]
     for joint in joints_to_remove:
         rand_vec = np.random.rand(batch_size) < probability_to_remove
-        joints2D_vis[rand_vec, joint] = 0
+        joints2D_visib[rand_vec, joint] = 0
 
-    return joints2D_vis
+    return joints2D_visib
 
 
 def random_swap_joints2D(joints_2D, joints_to_swap, swap_probability=0.1):
@@ -86,29 +91,9 @@ def random_swap_joints2D(joints_2D, joints_to_swap, swap_probability=0.1):
     return joints_2D
 
 
-def random_overlap_joints2D(joints_2D, joints_to_overlap, overlap_probability=0.1):
-    """
-    joints_2D: (bs, num joints, 2)
-    joints_to_swap: list of tuples of pairs of joints to overlap
-    """
-    batch_size = joints_2D.shape[0]
-    for pair in joints_to_overlap:
-        # Determine which samples to augment in the batch
-        rand_vec = np.random.rand(batch_size) < overlap_probability
-        samples_to_augment = joints_2D[rand_vec].clone()
-
-        # Determine which way the overlapping occurs (i.e. which joint moves to which other joint)
-        # 50/50 chance of overlap occuring either way
-        rand_vec2 = np.random.rand(samples_to_augment.shape[0]) < 0.5
-        samples_to_augment[rand_vec2, pair[0], :] = samples_to_augment[rand_vec2, pair[1], :]
-        samples_to_augment[np.logical_not(rand_vec2), pair[1], :] = samples_to_augment[np.logical_not(rand_vec2), pair[0], :]
-
-        joints_2D[rand_vec] = samples_to_augment
-
-    return joints_2D
-
-
-def random_occlude_box(seg, occlude_probability=0.2, occlude_box_dim=32.):
+def random_occlude_box(seg,
+                       occlude_probability=0.2,
+                       occlude_box_dim=32.):
     """
     seg: (bs, wh, wh)
     """
@@ -133,7 +118,10 @@ def random_occlude_box(seg, occlude_probability=0.2, occlude_box_dim=32.):
     return seg
 
 
-def random_occlude_bottom_half(seg, joints2D, joints2D_vis, occlude_probability=0.05):
+def random_occlude_bottom_half(seg,
+                               joints2D,
+                               joints2D_visib,
+                               occlude_probability=0.05):
     batch_size = seg.shape[0]
     wh = seg.shape[1]
 
@@ -145,12 +133,15 @@ def random_occlude_bottom_half(seg, joints2D, joints2D_vis, occlude_probability=
 
             if joints2D is not None:
                 joints2D_to_occlude = joints2D[i, :, 1] > occlude_from
-                joints2D_vis[i, joints2D_to_occlude] = False
+                joints2D_visib[i, joints2D_to_occlude] = False
 
-    return seg, joints2D, joints2D_vis
+    return seg, joints2D, joints2D_visib
 
 
-def random_occlude_top_half(seg, joints2D, joints2D_vis, occlude_probability=0.05):
+def random_occlude_top_half(seg,
+                            joints2D,
+                            joints2D_visib,
+                            occlude_probability=0.05):
     batch_size = seg.shape[0]
     wh = seg.shape[1]
 
@@ -162,12 +153,15 @@ def random_occlude_top_half(seg, joints2D, joints2D_vis, occlude_probability=0.0
 
             if joints2D is not None:
                 joints2D_to_occlude = joints2D[i, :, 1] < occlude_up_to
-                joints2D_vis[i, joints2D_to_occlude] = False
+                joints2D_visib[i, joints2D_to_occlude] = False
 
-    return seg, joints2D, joints2D_vis
+    return seg, joints2D, joints2D_visib
 
 
-def random_occlude_vertical_half(seg, joints2D, joints2D_vis, occlude_probability=0.05):
+def random_occlude_vertical_half(seg,
+                                 joints2D,
+                                 joints2D_visib,
+                                 occlude_probability=0.05):
     batch_size = seg.shape[0]
     wh = seg.shape[1]
 
@@ -184,111 +178,80 @@ def random_occlude_vertical_half(seg, joints2D, joints2D_vis, occlude_probabilit
                 if joints2D is not None:
                     joints2D_to_occlude = joints2D[i, :, 0] > occlude_up_to
             if joints2D is not None:
-                joints2D_vis[i, joints2D_to_occlude] = False
+                joints2D_visib[i, joints2D_to_occlude] = False
 
-    return seg, joints2D, joints2D_vis
-
-
-def augment_proxy_representation(orig_segs, orig_joints2D,
-                                 proxy_rep_augment_params,
-                                 orig_joints2D_vis=None):
-    new_segs = orig_segs.clone()
-    if orig_joints2D is not None:
-        new_joints2D = orig_joints2D.clone()
-    else:
-        new_joints2D = None
-    if orig_joints2D_vis is not None:
-        new_joints2D_vis = orig_joints2D_vis.clone()
-    else:
-        new_joints2D_vis = None
-
-    if proxy_rep_augment_params['remove_appendages']:
-        new_segs, new_joints2D_vis = random_remove_bodyparts(new_segs,
-                                                             classes_to_remove=proxy_rep_augment_params['remove_appendages_classes'],
-                                                             probabilities_to_remove=proxy_rep_augment_params['remove_appendages_probabilities'],
-                                                             joints2D_vis=new_joints2D_vis,
-                                                             probability_to_remove_joints=proxy_rep_augment_params['remove_appendage_joints_probability'])
-    if proxy_rep_augment_params['occlude_seg']:
-        new_segs = random_occlude_box(new_segs,
-                                      occlude_probability=proxy_rep_augment_params['occlude_probability'],
-                                      occlude_box_dim=proxy_rep_augment_params['occlude_box_dim'])
-
-    if proxy_rep_augment_params['swap_joints2D']:
-        new_joints2D = random_swap_joints2D(new_joints2D,
-                                            joints_to_swap=proxy_rep_augment_params['joints_to_swap'],
-                                            swap_probability=proxy_rep_augment_params['swap_probability'])
-
-    if proxy_rep_augment_params['overlap_joints2D']:
-        new_joints2D = random_overlap_joints2D(new_joints2D,
-                                               joints_to_overlap=proxy_rep_augment_params['joints_to_overlap'],
-                                               overlap_probability=proxy_rep_augment_params['overlap_probability'])
-
-    if proxy_rep_augment_params['deviate_joints2D']:
-        new_joints2D = random_joints2D_deviation(new_joints2D,
-                                                 delta_j2d_dev_range=proxy_rep_augment_params['delta_j2d_dev_range'],
-                                                 delta_j2d_hip_dev_range=proxy_rep_augment_params['delta_j2d_hip_dev_range'])
-
-    if proxy_rep_augment_params['remove_joints']:
-        new_joints2D_vis = random_remove_joints2D(new_joints2D_vis,
-                                                  joints_to_remove=proxy_rep_augment_params['remove_joints_indices'],
-                                                  probability_to_remove=proxy_rep_augment_params['remove_joints_probability'])
-
-    if proxy_rep_augment_params['occlude_bottom_half']:
-        new_segs, new_joints2D, new_joints2D_vis = random_occlude_bottom_half(new_segs,
-                                                                              new_joints2D,
-                                                                              new_joints2D_vis,
-                                                                              occlude_probability=proxy_rep_augment_params['occlude_bottom_half_probability'])
-    if 'occlude_top_half' in proxy_rep_augment_params.keys():
-        if proxy_rep_augment_params['occlude_top_half']:
-            new_segs, new_joints2D, new_joints2D_vis = random_occlude_top_half(new_segs,
-                                                                               new_joints2D,
-                                                                               new_joints2D_vis,
-                                                                               occlude_probability=proxy_rep_augment_params['occlude_top_half_probability'])
-
-    if proxy_rep_augment_params['occlude_vertical_half']:
-        new_segs, new_joints2D, new_joints2D_vis = random_occlude_vertical_half(new_segs,
-                                                                                new_joints2D,
-                                                                                new_joints2D_vis,
-                                                                                occlude_probability=proxy_rep_augment_params['occlude_vertical_half_probability'])
-
-    return new_segs, new_joints2D, new_joints2D_vis
+    return seg, joints2D, joints2D_visib
 
 
-def random_verts2D_deviation(vertices, delta_verts2d_dev_range=[-0.01, 0.01]):
-    """
-    Randomly add 2D uniform noise to vertices to create silhouettes/part segmentations with
-    corrupted edges.
-    """
-    batch_size = vertices.shape[0]
-    num_verts = vertices.shape[1]
-    device = vertices.device
+def augment_proxy_representation(seg,
+                                 joints2D,
+                                 joints2D_visib,
+                                 proxy_rep_augment_config):
+    new_seg = seg.clone()
+    new_joints2D = joints2D.clone()
+    new_joints2D_visib = joints2D_visib.clone()
 
-    noisy_vertices = vertices.clone()
+    # Body part removal
+    new_seg, new_joints2D_visib = random_remove_bodyparts(seg=new_seg,
+                                                          classes_to_remove=proxy_rep_augment_config.REMOVE_PARTS_CLASSES,
+                                                          probabilities_to_remove_classes=proxy_rep_augment_config.REMOVE_PARTS_PROBS,
+                                                          joints2D_visib=new_joints2D_visib,
+                                                          probability_to_remove_joints=proxy_rep_augment_config.REMOVE_APPENDAGE_JOINTS_PROB)
 
-    l, h = delta_verts2d_dev_range
-    delta_verts2d_dev = (h - l) * torch.rand(batch_size, num_verts, 2, device=device) + l
-    noisy_vertices[:, :, :2] = noisy_vertices[:, :, :2] + delta_verts2d_dev
+    # Box occlusion
+    new_seg = random_occlude_box(seg=new_seg,
+                                 occlude_probability=proxy_rep_augment_config.OCCLUDE_BOX_PROB,
+                                 occlude_box_dim=proxy_rep_augment_config.OCCLUDE_BOX_DIM)
 
-    return noisy_vertices
+    # 2D joint swapping
+    new_joints2D = random_swap_joints2D(joints_2D=new_joints2D,
+                                        joints_to_swap=proxy_rep_augment_config.JOINTS_TO_SWAP,
+                                        swap_probability=proxy_rep_augment_config.JOINTS_SWAP_PROB)
+
+    # 2D joint deviation
+    new_joints2D = random_joints2D_deviation(joints2D=new_joints2D,
+                                             delta_j2d_dev_range=proxy_rep_augment_config.DELTA_J2D_DEV_RANGE,
+                                             delta_j2d_hip_dev_range=proxy_rep_augment_config.DELTA_J2D_DEV_RANGE)
+
+    # 2D joint removal (i.e. make invisible)
+    new_joints2D_visib = random_remove_joints2D(joints2D_visib=new_joints2D_visib,
+                                                joints_to_remove=proxy_rep_augment_config.REMOVE_JOINTS_INDICES,
+                                                probability_to_remove=proxy_rep_augment_config.REMOVE_JOINTS_PROB)
+
+    # Occlude bottom/top/left halves of the body (but not the background - see rgb_augmentation.py)
+    new_seg, new_joints2D, new_joints2D_visib = random_occlude_bottom_half(seg=new_seg,
+                                                                           joints2D=new_joints2D,
+                                                                           joints2D_visib=new_joints2D_visib,
+                                                                           occlude_probability=proxy_rep_augment_config.OCCLUDE_BOTTOM_PROB)
+    new_seg, new_joints2D, new_joints2D_visib = random_occlude_top_half(new_seg,
+                                                                        new_joints2D,
+                                                                        new_joints2D_visib,
+                                                                        occlude_probability=proxy_rep_augment_config.OCCLUDE_TOP_PROB)
+    new_seg, new_joints2D, new_joints2D_visib = random_occlude_vertical_half(new_seg,
+                                                                             new_joints2D,
+                                                                             new_joints2D_visib,
+                                                                             occlude_probability=proxy_rep_augment_config.OCCLUDE_VERTICAL_PROB)
+
+    return new_seg, new_joints2D, new_joints2D_visib
 
 
-def random_extreme_crop(orig_segs,
+def random_extreme_crop(seg,
                         extreme_crop_probability=0.05):
     """
 
-    :param orig_segs:
+    :param seg:
     :param extreme_crop_probability:
-    :return: new_segs: part segmentations with regions to extreme crop
+    :return: new_seg: part segmentations with regions to extreme crop
     """
     remove_legs_classes = torch.tensor([5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-                                       device=orig_segs.device,
-                                       dtype=orig_segs.dtype)  # Legs and feet
+                                       device=seg.device,
+                                       dtype=seg.dtype)  # Legs and feet
     remove_legs_arms_classes = torch.tensor([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 20, 21, 22],
-                                            device=orig_segs.device,
-                                            dtype=orig_segs.dtype)  # Legs, feet, arms hands
+                                            device=seg.device,
+                                            dtype=seg.dtype)  # Legs, feet, arms hands
 
-    batch_size = orig_segs.shape[0]
-    new_segs = orig_segs.clone()
+    batch_size = seg.shape[0]
+    new_seg = seg.clone()
 
     # Determine which samples to extreme crop in the batch
     # Remove legs for all samples to extreme crop (by setting to 0 in seg)
@@ -297,8 +260,8 @@ def random_extreme_crop(orig_segs,
     rand_vec_legs = rand_vec < extreme_crop_probability * 0.5
     rand_vec_legs_arms = torch.logical_and(rand_vec > extreme_crop_probability * 0.5,
                                            rand_vec < extreme_crop_probability)
-    samples_to_extreme_crop_legs = new_segs[rand_vec_legs]
-    samples_to_extreme_crop_legs_arms = new_segs[rand_vec_legs_arms]
+    samples_to_extreme_crop_legs = new_seg[rand_vec_legs]
+    samples_to_extreme_crop_legs_arms = new_seg[rand_vec_legs_arms]
 
     indices_extreme_crop_legs = (samples_to_extreme_crop_legs[..., None] == remove_legs_classes).any(-1)
     samples_to_extreme_crop_legs[indices_extreme_crop_legs] = 0
@@ -306,10 +269,10 @@ def random_extreme_crop(orig_segs,
     indices_extreme_crop_legs_arms = (samples_to_extreme_crop_legs_arms[..., None] == remove_legs_arms_classes).any(-1)
     samples_to_extreme_crop_legs_arms[indices_extreme_crop_legs_arms] = 0
 
-    new_segs[rand_vec_legs] = samples_to_extreme_crop_legs
-    new_segs[rand_vec_legs_arms] = samples_to_extreme_crop_legs_arms
+    new_seg[rand_vec_legs] = samples_to_extreme_crop_legs
+    new_seg[rand_vec_legs_arms] = samples_to_extreme_crop_legs_arms
 
-    return new_segs
+    return new_seg
 
 
 
