@@ -133,9 +133,6 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print('\nDevice: {}'.format(device))
 
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
-
     run_train(device=device,
               experiment_dir=args.experiment_dir,
               pose_shape_cfg_opts=args.pose_shape_cfg_opts,
