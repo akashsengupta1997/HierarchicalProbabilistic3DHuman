@@ -92,7 +92,7 @@ $3DPW_DIR_PATH
       ├── imageFiles
       └── sequenceFiles
 ```
-Additionally, download HRNet 2D joint detections on 3DPW from [here](https://drive.google.com/drive/u/0/folders/1GnVukI3Z1h0fq9GeD40RI8z35EfKWEda), and place this in `$3DPW_DIR_PATH/test`. Update `configs/paths.py` with the path pointing to this directory. Evaluate on 3DPW with:
+Additionally, download HRNet 2D joint detections on 3DPW from [here](https://drive.google.com/drive/u/0/folders/1GnVukI3Z1h0fq9GeD40RI8z35EfKWEda), and place this in `$3DPW_DIR_PATH/test`. Update `configs/paths.py` with the path pointing to `$3DPW_DIR_PATH/test`. Evaluate on 3DPW with:
 ```
 python run_evaluate.py -D 3dpw
 ```
