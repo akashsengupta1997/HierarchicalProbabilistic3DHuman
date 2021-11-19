@@ -54,7 +54,7 @@ def run_train(device,
     train_dataset = OnTheFlySMPLTrainDataset(poses_path=paths.TRAIN_POSES_PATH,
                                              textures_path=paths.TRAIN_TEXTURES_PATH,
                                              backgrounds_dir_path=paths.TRAIN_BACKGROUNDS_PATH,
-                                             params_from='not_amass',
+                                             params_from='all',
                                              img_wh=pose_shape_cfg.DATA.PROXY_REP_SIZE)
     val_dataset = OnTheFlySMPLTrainDataset(poses_path=paths.VAL_POSES_PATH,
                                            textures_path=paths.VAL_TEXTURES_PATH,
