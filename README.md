@@ -92,14 +92,36 @@ $3DPW_DIR_PATH
       ├── imageFiles
       └── sequenceFiles
 ```
-Additionally, download HRNet 2D joint detections on 3DPW from [here](https://drive.google.com/drive/u/0/folders/1GnVukI3Z1h0fq9GeD40RI8z35EfKWEda), and place this in `$3DPW_DIR_PATH/test`. Update `configs/paths.py` with the path pointing to `$3DPW_DIR_PATH/test`. Evaluate on 3DPW with:
+Additionally, download HRNet 2D joint detections on 3DPW from [here](https://drive.google.com/drive/folders/1GnVukI3Z1h0fq9GeD40RI8z35EfKWEda?usp=sharing), and place this in `$3DPW_DIR_PATH/test`. Update `configs/paths.py` with the path pointing to `$3DPW_DIR_PATH/test`. Evaluate on 3DPW with:
 ```
 python run_evaluate.py -D 3dpw
 ```
 The number of samples used to evaluate sample-related metrics can be changed using the `--num_samples` option (default is 10).
 
+## Training
+`run_train.py` is used to train our method using random synthetic training data (rendered on-the-fly during training). 
+
+Download .npz files containing SMPL training/validation body poses and textures from [here](https://drive.google.com/drive/folders/1lvxwKcqi4HaxTLQlEicPhN5Q3L-aWjYN?usp=sharing). Place these files in a `./train_files` directory, or update the appropriate variables in `configs/paths.py` with paths pointing to the these files. Note that the SMPL textures are from [SURREAL](https://github.com/gulvarol/surreal) and [MultiGarmentNet](https://github.com/bharat-b7/MultiGarmentNetwork).
+
+We use images from [LSUN](https://github.com/fyu/lsun) as random backgrounds for our synthetic training data. Specifically, images from the 10 scene categories are used. Instructions to download and extract these images are provided [here](https://github.com/fyu/lsun). The `copy_lsun_images_to_train_files_dir.py` script can be used to copy LSUN background images to the `./train_files` directory, which should have the following structure:
+```
+train_files
+      ├── lsun_backgrounds
+          ├── train
+          ├── val
+      ├── smpl_train_poses.npz
+      ├── smpl_train_textures.npz                                  
+      ├── smpl_val_poses.npz                                  
+      └── smpl_val_textures.npz                                  
+```
+
+Finally, start training with:
+```
+python run_train.py -E experiments/exp_001
+```
+As a sanity check, the script should find 91106 training poses, 125 + 792 training textures, 397582 training backgrounds, 33347 validation poses, 32 + 76 validation textures and 3000 validation backgrounds.
+
 ## TODO
-- Training Code
 - Gendered pre-trained models for improved shape estimation
 - Weaknesses and future research
 
@@ -114,3 +136,6 @@ Code was adapted from/influenced by the following repos - thanks to the authors!
 - [Probabilistic Orientation Estimation with Matrix Fisher Distributions](https://github.com/Davmo049/Public_prob_orientation_estimation_with_matrix_fisher_distributions)
 - [CannyEdgePytorch](https://github.com/DCurro/CannyEdgePytorch)
 - [Matrix-Fisher-Distribution](https://github.com/tylee-fdcl/Matrix-Fisher-Distribution)
+- [SURREAL](https://github.com/gulvarol/surreal)
+- [MultiGarmnetNet](https://github.com/bharat-b7/MultiGarmentNetwork)
+- [LSUN](https://github.com/fyu/lsun)
