@@ -7,7 +7,7 @@ This is the official code repository of the above paper, which takes a probabili
 
 ![teaser](teaser.gif)
 
-This repository contains inference, training and evaluation code. A few weaknesses of this approach, and future research directions, are listed below (TODO).
+This repository contains inference, training and evaluation code. A few weaknesses of this approach, and future research directions, are listed below.
 If you find this code useful in your research, please cite the following publication:
 ```
 @InProceedings{sengupta2021hierprobhuman,
@@ -121,9 +121,15 @@ python run_train.py -E experiments/exp_001
 ```
 As a sanity check, the script should find 91106 training poses, 125 + 792 training textures, 397582 training backgrounds, 33347 validation poses, 32 + 76 validation textures and 3000 validation backgrounds.
 
+## Weaknesses and Future Research
+The following aspects of our method may be the subject of future research:
+- Mesh interpenetrations: this occurs occasionally amongst 3D mesh samples drawn from shape and pose distribution predictions. A sample inter-penetratation penalty may be useful.
+- Sample diversity / distribution expressiviness: since the predicted distributions are uni-modal, sample diversity may be limited.
+- Sampling speed: rejection sampling from a matrix-Fisher distribution is currently slow.
+- Non-tight clothing: body shape prediction accuracy suffers when subjects are wearing non-tight clothing, since the synthetic training data does not model clothing in 3D (only uses clothing textures). Perhaps better synthetic data (e.g. [AGORA](https://agora.is.tue.mpg.de)) will alleviate this issue.
+
 ## TODO
 - Gendered pre-trained models for improved shape estimation
-- Weaknesses and future research
 
 ## Acknowledgments
 Code was adapted from/influenced by the following repos - thanks to the authors!
