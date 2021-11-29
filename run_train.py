@@ -120,9 +120,12 @@ def run_train(device,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--experiment_dir', '-E', type=str)
-    parser.add_argument('--pose_shape_cfg_opts', '-O', nargs='*', default=None)
-    parser.add_argument('--resume_from_epoch', '-R', type=int, default=None)
+    parser.add_argument('--experiment_dir', '-E', type=str,
+                        help='Path to directory where logs and checkpoints are saved.')
+    parser.add_argument('--pose_shape_cfg_opts', '-O', nargs='*', default=None,
+                        help='Command line options to modify experiment config e.g. ''-O TRAIN.NUM_EPOCHS 120'' will change number of training epochs to 120 in the config.')
+    parser.add_argument('--resume_from_epoch', '-R', type=int, default=None,
+                        help='Epoch to resume experiment from. If resuming, experiment_dir must already exist, with saved model checkpoints and config yaml file.')
     parser.add_argument('--gpu', type=int, default=0)
     args = parser.parse_args()
 
