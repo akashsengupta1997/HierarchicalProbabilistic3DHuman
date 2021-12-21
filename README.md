@@ -71,7 +71,7 @@ This will first detect human bounding boxes in the input images using Mask-RCNN.
 
 If the gender of the subject is known, you may wish to carry out gendered inference using the provided male/female model weights. This can be done by modifying the above command as follows:
 ```
-python --gender male --pose_shape_weights model_files/poseMF_shapeGaussian_net_weights_male.tar run_predict.py --image_dir ./demo/ --save_dir ./output_male/ --visualise_samples --visualise_uncropped
+python run_predict.py --gender male --pose_shape_weights model_files/poseMF_shapeGaussian_net_weights_male.tar --image_dir ./demo/ --save_dir ./output_male/ --visualise_samples --visualise_uncropped
 ```
 (similar for the female model). Using gendered models for inference may result in better body shape estimates, as it serves as a prior over 3D shape.
 
