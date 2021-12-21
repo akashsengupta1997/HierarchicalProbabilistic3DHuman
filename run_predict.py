@@ -25,7 +25,8 @@ def run_predict(device,
                 already_cropped_images=False,
                 visualise_samples=False,
                 visualise_uncropped=False,
-                joints2Dvisib_threshold=0.75):
+                joints2Dvisib_threshold=0.75,
+                gender='neutral'):
 
     # ------------------------- Models -------------------------
     # Configs
@@ -56,8 +57,10 @@ def run_predict(device,
                                           threshold=pose_shape_cfg.DATA.EDGE_THRESHOLD).to(device)
 
     # SMPL model
+    print('\nUsing {} SMPL model with {} shape parameters.'.format(gender, str(pose_shape_cfg.MODEL.NUM_SMPL_BETAS)))
     smpl_model = SMPL(paths.SMPL,
                       batch_size=1,
+                      gender=gender,
                       num_betas=pose_shape_cfg.MODEL.NUM_SMPL_BETAS).to(device)
     smpl_immediate_parents = smpl_model.parents.tolist()
 
@@ -97,6 +100,7 @@ if __name__ == '__main__':
     parser.add_argument('--visualise_samples', '-VS', action='store_true')
     parser.add_argument('--visualise_uncropped', '-VU', action='store_true')
     parser.add_argument('--joints2Dvisib_threshold', '-T', type=float, default=0.75)
+    parser.add_argument('--gender', '-G', type=str, default='neutral', choices=['neutral', 'male', 'female'], help='Gendered SMPL models may be used.')
     parser.add_argument('--gpu', type=int, default=0)
     args = parser.parse_args()
 
@@ -117,7 +121,8 @@ if __name__ == '__main__':
                 already_cropped_images=args.cropped_images,
                 visualise_samples=args.visualise_samples,
                 visualise_uncropped=args.visualise_uncropped,
-                joints2Dvisib_threshold=args.joints2Dvisib_threshold)
+                joints2Dvisib_threshold=args.joints2Dvisib_threshold,
+                gender=args.gender)
 
 
 

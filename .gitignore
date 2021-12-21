@@ -13,7 +13,7 @@
 *tar
 
 #Demo output
-output/*
+output*/*
 
 #Experiments
 experiments/*
