@@ -44,7 +44,7 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git@v0.3.0"
 ### Model files
 You will need to download the SMPL model. The [neutral model](http://smplify.is.tue.mpg.de) is required for training and running the demo code. If you want to evaluate the model on datasets with gendered SMPL labels (such as 3DPW and SSP-3D), the male and female models are available [here](http://smpl.is.tue.mpg.de). You will need to convert the SMPL model files to be compatible with python3 by removing any chumpy objects. To do so, please follow the instructions [here](https://github.com/vchoutas/smplx/tree/master/tools).
 
-Download pre-trained model checkpoints for our 3D Shape/Pose network, as well as for 2D Pose [HRNet-W48](https://github.com/leoxiaobin/deep-high-resolution-net.pytorch) from [here](https://drive.google.com/drive/folders/1WHdbAaPM8-FpnwMuCdVEchskgKab3gel?usp=sharing). 
+Download pre-trained model checkpoints for our 3D Shape/Pose network, as well as for 2D Pose [HRNet-W48](https://github.com/leoxiaobin/deep-high-resolution-net.pytorch) from [here](https://drive.google.com/drive/folders/1WHdbAaPM8-FpnwMuCdVEchskgKab3gel?usp=sharing). In addition to the neutral-gender prediction network presented in the paper, we provide pre-trained checkpoints for male and female prediction networks, which are trained with male/female SMPL shape respectively. Download these checkpoints if you wish to do gendered shape inference.
 
 Place the SMPL model files and network checkpoints in the `model_files` directory, which should have the following structure. If the files are placed elsewhere, you will need to update `configs/paths.py` accordingly.
 
@@ -68,6 +68,12 @@ Place the SMPL model files and network checkpoints in the `model_files` director
 python run_predict.py --image_dir ./demo/ --save_dir ./output/ --visualise_samples --visualise_uncropped
 ```
 This will first detect human bounding boxes in the input images using Mask-RCNN. If your input images are already cropped and centred around the subject of interest, you may skip this step using `--cropped_images` as an option. The 3D Shape/Pose network is somewhat sensitive to cropping and centering - this is a good place to start troubleshooting in case of poor results.
+
+If the gender of the subject is known, you may wish to carry out gendered inference using the provided male/female model weights. This can be done by modifying the above command as follows:
+```
+python --gender male --pose_shape_weights model_files/poseMF_shapeGaussian_net_weights_male.tar run_predict.py --image_dir ./demo/ --save_dir ./output_male/ --visualise_samples --visualise_uncropped
+```
+(similar for the female model). Using gendered models for inference may result in better body shape estimates, as it serves as a prior over 3D shape.
 
 Inference can be slow due to the rejection sampling procedure used to estimate per-vertex 3D uncertainty. If you are not interested in per-vertex uncertainty, you may modify `predict/predict_poseMF_shapeGaussian_net.py` by commenting out code related to sampling, and use a plain texture to render meshes for visualisation (this will be cleaned up and added as an option to in the `run_predict.py` future).
 
@@ -127,9 +133,6 @@ The following aspects of our method may be the subject of future research:
 - Sample diversity / distribution expressiviness: since the predicted distributions are uni-modal, sample diversity may be limited.
 - Sampling speed: rejection sampling from a matrix-Fisher distribution is currently slow.
 - Non-tight clothing: body shape prediction accuracy suffers when subjects are wearing non-tight clothing, since the synthetic training data does not model clothing in 3D (only uses clothing textures). Perhaps better synthetic data (e.g. [AGORA](https://agora.is.tue.mpg.de)) will alleviate this issue.
-
-## TODO
-- Gendered pre-trained models for improved shape estimation
 
 ## Acknowledgments
 Code was adapted from/influenced by the following repos - thanks to the authors!
