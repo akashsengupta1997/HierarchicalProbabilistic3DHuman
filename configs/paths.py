@@ -12,9 +12,9 @@ PW3D_PATH = '/scratch2/as2562/datasets/3DPW/test'
 SSP3D_PATH = '/scratch2/as2562/datasets/ssp_3d'
 
 # ------------------------- Train Datasets -------------------------
-TRAIN_POSES_PATH = '/scratch/as2562/datasets/on_the_fly_smpl/amass_up3d_3dpw_train.npz'
-TRAIN_TEXTURES_PATH = '/scratch/as2562/datasets/on_the_fly_smpl/densepose_textures/surreal_mgn_textures_train.npz'
+TRAIN_POSES_PATH = './train_files/smpl_train_poses.npz'
+TRAIN_TEXTURES_PATH = './train_files/smpl_train_textures.npz'
 TRAIN_BACKGROUNDS_PATH = '/scratch/as2562/datasets/on_the_fly_smpl/lsun_backgrounds/train'
-VAL_POSES_PATH = '/scratch/as2562/datasets/on_the_fly_smpl/up3d_3dpw_val.npz'
-VAL_TEXTURES_PATH = '/scratch/as2562/datasets/on_the_fly_smpl/densepose_textures/surreal_mgn_textures_val.npz'
+VAL_POSES_PATH = './train_files/smpl_val_poses.npz'
+VAL_TEXTURES_PATH = './train_files/smpl_val_textures.npz'
 VAL_BACKGROUNDS_PATH = '/scratch/as2562/datasets/on_the_fly_smpl/lsun_backgrounds/val'
