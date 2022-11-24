@@ -1,7 +1,7 @@
 # Hierarchical Kinematic Probability Distributions for 3D Human Shape and Pose Estimation from Images in the Wild
 Akash Sengupta, Ignas Budvytis, Roberto Cipolla  
 ICCV 2021  
-[[paper+supplementary](https://arxiv.org/pdf/2110.00990.pdf)][[poster](https://www.youtube.com/watch?v=w7k9UC3sfGA)][[results video](https://www.youtube.com/watch?v=qVrvOebDBs4)]
+[[paper+supplementary](https://arxiv.org/abs/2110.00990)][[poster](https://www.youtube.com/watch?v=w7k9UC3sfGA)][[results video](https://www.youtube.com/watch?v=qVrvOebDBs4)]
 
 This is the official code repository of the above paper, which takes a probabilistic approach to 3D human shape and pose estimation and predicts multiple plausible 3D reconstruction samples given an input image. 
 
