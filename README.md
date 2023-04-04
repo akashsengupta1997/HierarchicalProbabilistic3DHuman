@@ -40,7 +40,7 @@ Finally, install [pytorch3d](https://github.com/facebookresearch/pytorch3d/blob/
 ```
 pip install "git+https://github.com/facebookresearch/pytorch3d.git@v0.3.0"
 ```
-Note: if you would like to use pytorch3d v0.5.0 or greater, you will need to slightly modify the camera models in the [renderer class definition](https://github.com/akashsengupta1997/HierarchicalProbabilistic3DHuman/blob/main/renderers/pytorch3d_textured_renderer.py), as outlined [here](https://github.com/akashsengupta1997/HierarchicalProbabilistic3DHuman/issues/11).
+IMPORTANT: if you would like to use pytorch3d v0.5.0 or greater, you will need to slightly modify the camera models in the [renderer class definition](https://github.com/akashsengupta1997/HierarchicalProbabilistic3DHuman/blob/main/renderers/pytorch3d_textured_renderer.py), as outlined [here](https://github.com/akashsengupta1997/HierarchicalProbabilistic3DHuman/issues/11).
 
 ### Model files
 You will need to download the SMPL model. The [neutral model](http://smplify.is.tue.mpg.de) is required for training and running the demo code. If you want to evaluate the model on datasets with gendered SMPL labels (such as 3DPW and SSP-3D), the male and female models are available [here](http://smpl.is.tue.mpg.de). You will need to convert the SMPL model files to be compatible with python3 by removing any chumpy objects. To do so, please follow the instructions [here](https://github.com/vchoutas/smplx/tree/master/tools).
