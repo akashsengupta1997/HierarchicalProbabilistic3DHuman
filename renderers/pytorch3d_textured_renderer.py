@@ -168,6 +168,7 @@ class TexturedIUVRenderer(nn.Module):
                                               focal_length=perspective_focal_length,
                                               principal_point=((img_wh/2., img_wh/2.),),
                                               image_size=((img_wh, img_wh),))
+                                              # in_ndc=False)  # Uncomment for pytorch3d>=0.5.0
         elif projection_type == 'orthographic':
             self.cameras = OrthographicCameras(device=device,
                                                R=cam_R,
@@ -175,6 +176,7 @@ class TexturedIUVRenderer(nn.Module):
                                                focal_length=orthographic_scale*(img_wh/2.),
                                                principal_point=((img_wh / 2., img_wh / 2.),),
                                                image_size=((img_wh, img_wh),))
+                                               # in_ndc=False)  # Uncomment for pytorch3d>=0.5.0
 
         # Lights for textured RGB render - pre-defined here but can be specified in forward pass if lights will vary (e.g. random cameras)
         self.render_rgb = render_rgb
