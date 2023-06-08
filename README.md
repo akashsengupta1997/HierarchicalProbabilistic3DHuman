@@ -1,5 +1,5 @@
 # Hierarchical Kinematic Probability Distributions for 3D Human Shape and Pose Estimation from Images in the Wild
-Akash Sengupta, Ignas Budvytis, Roberto Cipolla  
+[Akash Sengupta](https://akashsengupta1997.github.io), [Ignas Budvytis](http://mi.eng.cam.ac.uk/~ib255/), [Roberto Cipolla](https://mi.eng.cam.ac.uk/~cipolla/)  
 ICCV 2021  
 [[paper+supplementary](https://arxiv.org/abs/2110.00990)][[poster](https://www.youtube.com/watch?v=w7k9UC3sfGA)][[results video](https://www.youtube.com/watch?v=qVrvOebDBs4)]
 
