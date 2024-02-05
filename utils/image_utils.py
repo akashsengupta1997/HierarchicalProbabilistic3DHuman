@@ -239,6 +239,8 @@ def batch_crop_pytorch_affine(input_wh,
                               joints2D=None,
                               rgb=None,
                               seg=None,
+                              silh=None,
+                              depth=None,
                               bbox_determiner=None,
                               bbox_centres=None,
                               bbox_heights=None,
@@ -286,6 +288,11 @@ def batch_crop_pytorch_affine(input_wh,
                 elif seg is not None:
                     # Determine bounding box corners from segmentation foreground/body pixels
                     body_pixels = torch.nonzero(seg[i] != 0, as_tuple=False)
+                    bbox_corners[i, :2], _ = torch.min(body_pixels, dim=0)  # Top left
+                    bbox_corners[i, 2:], _ = torch.max(body_pixels, dim=0)  # Bot right
+                elif silh is not None:
+                    # Determine bounding box corners from segmentation foreground/body pixels
+                    body_pixels = torch.nonzero(silh[i] != 0, as_tuple=False)
                     bbox_corners[i, :2], _ = torch.min(body_pixels, dim=0)  # Top left
                     bbox_corners[i, 2:], _ = torch.max(body_pixels, dim=0)  # Bot right
                 elif joints2D is not None:
@@ -348,6 +355,8 @@ def batch_crop_pytorch_affine(input_wh,
     affine_grid = F.affine_grid(theta=affine_trans_inv_normed,
                                 size=[num_to_crop, 1, int(output_wh[1]), int(output_wh[0])],
                                 align_corners=False)
+    
+    #print(f'affine_grid shape:{affine_grid.shape}')
 
     cropped_dict = {}
     if iuv is not None:
@@ -374,6 +383,21 @@ def batch_crop_pytorch_affine(input_wh,
                                             mode='nearest',
                                             padding_mode='zeros',
                                             align_corners=False)
+    if silh is not None:
+        cropped_dict['silh'] = F.grid_sample(input=silh,
+                                            grid=affine_grid,
+                                            mode='nearest',
+                                            padding_mode='zeros',
+                                            align_corners=False)
+    if depth is not None:
+        cropped_dict['depth'] = F.grid_sample(input=depth,
+                                            grid=affine_grid,
+                                            mode='nearest',
+                                            padding_mode='zeros',
+                                            align_corners=False)
+        
+    #:param rgb: (B, 3, H, W)
+    #:param seg: (B, H, W)
 
     return cropped_dict
 

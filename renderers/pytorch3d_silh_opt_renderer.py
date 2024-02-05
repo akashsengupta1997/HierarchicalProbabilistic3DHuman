@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-import config
+#import config
 
 # Data structures and functions for rendering
 from pytorch3d.structures import Meshes
@@ -120,7 +120,7 @@ class SilhouetteRenderer(nn.Module):
         if blur_radius is None:
             blur_radius = np.log(1. / 1e-4 - 1.) * blend_sigma
         raster_settings = RasterizationSettings(image_size=img_wh,
-                                                blur_radius=blur_radius,
+                                                blur_radius=blur_radius,###
                                                 faces_per_pixel=faces_per_pixel,
                                                 bin_size=bin_size,
                                                 max_faces_per_bin=max_faces_per_bin,
@@ -134,7 +134,7 @@ class SilhouetteRenderer(nn.Module):
         blend_params = BlendParams(background_color=background_color,
                                    sigma=blend_sigma,
                                    gamma=blend_gamma)
-        self.silh_shader = SoftSilhouetteShader(blend_params=blend_params)
+        self.silh_shader = SoftSilhouetteShader(blend_params=blend_params) ####
 
     def forward(self,
                 vertices,

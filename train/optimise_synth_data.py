@@ -42,7 +42,8 @@ def optimise_synth_data(pose_shape_model,
                                    model_save_dir,
                                    logs_save_path,
                                    save_val_metrics=['PVE-SC', 'MPJPE-PA'],
-                                   checkpoint=None):
+                                   checkpoint=None,
+                                   silh_opt_renderer=None):
     print("Calling optimise_synth_data")
     # Set up dataloaders
     train_dataloader = DataLoader(train_dataset,
@@ -226,11 +227,12 @@ def optimise_synth_data(pose_shape_model,
                     iuv_in = crop_outputs['iuv']
                     target_joints2d_coco = crop_outputs['joints2D']
                     rgb_in = crop_outputs['rgb']
+                    
+                    silh = torch.sum(rgb_in, dim=1)
+                    silh[silh!=0] = 1
 
                     save_synth=True
                     if save_synth==True:
-                        silh = torch.sum(rgb_in, dim=1)
-                        silh[silh!=0] = 1
 
                         silh_tosave = silh.detach().cpu().numpy()
                         rgb_tosave = rgb_in.detach().cpu().numpy().transpose((0, 2, 3, 1))
@@ -247,6 +249,8 @@ def optimise_synth_data(pose_shape_model,
                             cv2.imwrite(rgb_name, rgb_tosave[i, :, :, :] * 255)
 
                             #ipdb.set_trace()
+
+                    
 
 
                     # Check if joints within image dimensions after cropping + recentering.
@@ -344,6 +348,101 @@ def optimise_synth_data(pose_shape_model,
                                                        pose2rot=False)
                     pred_vertices_mode = pred_smpl_output_mode.vertices  # (bs, 6890, 3)
 
+                    # Need to flip pred_vertices before projecting so that they project the right way up.
+                    pred_vertices_mode = aa_rotate_translate_points_pytorch3d(points=pred_vertices_mode,
+                                                                            axes=torch.tensor([1., 0., 0.], device=device),
+                                                                            angles=np.pi,
+                                                                            translations=torch.zeros(3, device=device))
+
+                    shape = pred_shape_dist.loc.clone()
+                    pose = pred_pose_rotmats_mode.clone()
+                    print(type(shape))
+                    print(shape)
+
+                
+                    shape.requires_grad=True
+                    pose.requires_grad=True
+                    
+                    opt_variables = [pose, shape]
+                    lr=0.002
+                    optimiser = torch.optim.SGD(opt_variables, lr=lr)
+                    loss_history = {'silhouette': []}
+
+                    target_silh = silh
+
+                    cam_t = torch.cat([pred_cam_wp[:, 1:],
+                                    torch.ones(pred_cam_wp.shape[0], 1, device=device).float() * 2.5],
+                                    dim=-1)
+                    print(pred_cam_wp)
+                    print(cam_t)
+                    
+                
+                flag=True
+                with torch.set_grad_enabled(True):
+                    num_iters=10000
+                    for iter in tqdm(range(num_iters)):
+                        pred_smpl_output = smpl_model(body_pose=pose,
+                                                       global_orient=pred_glob_rotmats.unsqueeze(1),
+                                                       betas=shape,
+                                                       pose2rot=False)
+                        pred_vertices = pred_smpl_output.vertices  # (bs, 6890, 3)
+                        pred_vertices = aa_rotate_translate_points_pytorch3d(points=pred_vertices,
+                                                                                         axes=x_axis,
+                                                                                         angles=np.pi,
+                                                                                         translations=torch.zeros(3, device=device).float())
+
+                        pred_silhs = silh_opt_renderer(vertices=pred_vertices,
+                                            cam_t=cam_t,
+                                            perspective_focal_length=pose_shape_cfg.TRAIN.SYNTH_DATA.FOCAL_LENGTH)['silhouettes']
+                        
+                        
+                        if flag==True:
+                            pred_silh_tosave = pred_silhs.clone().detach().cpu().numpy()
+                            pred_silh_name = model_save_dir + '/' + str(0) + "_init_pred_silh.png"
+                            cv2.imwrite(silh_name, silh_tosave[0, :, :] * 255)
+                            cv2.imwrite(pred_silh_name, pred_silh_tosave[0, :, :] * 255)
+                            flag=False
+
+                        
+                        #print(target_silh.shape)
+                        #print(pred_silhs.shape)
+                        
+                        # Silhouette Loss
+                        silh_loss = ((target_silh - pred_silhs) ** 2).mean()
+                        #print(silh_loss)
+                        optimiser.zero_grad()
+                        loss = silh_loss
+                        loss.backward()
+                        optimiser.step()
+
+                        with torch.no_grad():
+                            loss_history['silhouette'].append(silh_loss.item())
+
+
+                print(shape)
+                # Loss history visualisation
+                from matplotlib import pyplot as plt
+                plt.figure()
+                plt.subplot(121)
+                plt.title('Silhouette Loss')
+                plt.xlabel("Iterations")
+                plt.plot(loss_history['silhouette'])
+                plt.savefig(os.path.join(model_save_dir, "sil_loss.png"))
+                plt.close()
+
+                
+                if save_synth==True:
+                    silh_tosave = target_silh.detach().cpu().numpy()
+                    pred_silh_tosave = pred_silhs.detach().cpu().numpy()
+
+                    print(rgb_in.shape[0])
+                    for i in range(rgb_in.shape[0]):
+                        silh_name = model_save_dir + '/' + str(i) + "_silh.png"
+                        pred_silh_name = model_save_dir + '/' + str(i) + "_pred_silh.png"
+                        cv2.imwrite(silh_name, silh_tosave[i, :, :] * 255)
+                        cv2.imwrite(pred_silh_name, pred_silh_tosave[i, :, :] * 255)
+
+
 
 
                     #############################################################
@@ -351,11 +450,22 @@ def optimise_synth_data(pose_shape_model,
                     #############################################################
                     #print('From Predict')
 
+                with torch.no_grad():
+                    # Optimised SMPL mesh
+                    pred_smpl_output_opt = smpl_model(body_pose=pose,
+                                                       global_orient=pred_glob_rotmats.unsqueeze(1),
+                                                       betas=shape,
+                                                       pose2rot=False)
+                    pred_vertices_opt = pred_smpl_output_opt.vertices  # (bs, 6890, 3)
+
                     # Need to flip pred_vertices before projecting so that they project the right way up.
-                    pred_vertices_mode = aa_rotate_translate_points_pytorch3d(points=pred_vertices_mode,
+                    pred_vertices_opt = aa_rotate_translate_points_pytorch3d(points=pred_vertices_opt,
                                                                             axes=torch.tensor([1., 0., 0.], device=device),
                                                                             angles=np.pi,
                                                                             translations=torch.zeros(3, device=device))
+                    
+
+
                     # Rotating 90° about vertical axis for visualisation
                     pred_vertices_rot90_mode = aa_rotate_translate_points_pytorch3d(points=pred_vertices_mode,
                                                                                     axes=torch.tensor([0., 1., 0.], device=device),
@@ -381,6 +491,14 @@ def optimise_synth_data(pose_shape_model,
                     pred_reposed_vertices_rot90_mean = aa_rotate_translate_points_pytorch3d(points=pred_reposed_vertices_flipped_mean,
                                                                                             axes=torch.tensor([0., 1., 0.], device=device),
                                                                                             angles=-np.pi / 2.,
+                                                                                            translations=torch.zeros(3, device=device))
+                    
+                    pred_reposed_smpl_opt = smpl_model(betas=shape)
+                    pred_reposed_vertices_opt = pred_reposed_smpl_opt.vertices  # (1, 6890, 3)
+                    # Need to flip pred_vertices before projecting so that they project the right way up.
+                    pred_reposed_vertices_flipped_opt = aa_rotate_translate_points_pytorch3d(points=pred_reposed_vertices_opt,
+                                                                                            axes=torch.tensor([1., 0., 0.], device=device),
+                                                                                            angles=np.pi,
                                                                                             translations=torch.zeros(3, device=device))
 
                     # -------------------------------------- VISUALISATION --------------------------------------
@@ -418,6 +536,16 @@ def optimise_synth_data(pose_shape_model,
                                                                             size=(visualise_wh, visualise_wh),
                                                                             mode='bilinear',
                                                                             align_corners=False)
+                    body_vis_output_opt = body_vis_renderer(vertices=pred_vertices_opt,
+                                                        cam_t=cam_t,
+                                                        orthographic_scale=orthographic_scale,
+                                                        lights_rgb_settings=lights_rgb_settings,
+                                                        verts_features=vertex_var_colours)
+                    body_vis_rgb_opt = batch_add_rgb_background(backgrounds=cropped_for_proxy_rgb,
+                                                            rgb=body_vis_output_opt['rgb_images'].permute(0, 3, 1, 2).contiguous(),
+                                                            seg=body_vis_output_opt['iuv_images'][:, :, :, 0].round())
+                    body_vis_rgb_opt = body_vis_rgb_opt.cpu().detach().numpy()[0].transpose(1, 2, 0)
+
                     # print(silh.shape)
                     # silh = silh.cpu().detach().numpy().transpose(1, 2, 0)
                     # print(silh.shape)
@@ -456,6 +584,12 @@ def optimise_synth_data(pose_shape_model,
                                                             cam_t=fixed_cam_t,
                                                             orthographic_scale=fixed_orthographic_scale,
                                                             lights_rgb_settings=lights_rgb_settings)['rgb_images'].cpu().detach().numpy()[0]
+                    reposed_body_vis_rgb_opt = body_vis_renderer(vertices=pred_reposed_vertices_flipped_opt,
+                                                            textures=plain_texture,
+                                                            cam_t=fixed_cam_t,
+                                                            orthographic_scale=fixed_orthographic_scale,
+                                                            lights_rgb_settings=lights_rgb_settings)['rgb_images'].cpu().detach().numpy()[0]
+                    
                     reposed_body_vis_rgb_rot90 = body_vis_renderer(vertices=pred_reposed_vertices_rot90_mean,
                                                                 textures=plain_texture,
                                                                 cam_t=fixed_cam_t,
@@ -468,6 +602,7 @@ def optimise_synth_data(pose_shape_model,
                     combined_vis_fig = np.zeros((combined_vis_rows * visualise_wh, combined_vis_cols * visualise_wh, 3),
                                                 dtype=body_vis_rgb.dtype)
                     # Cropped input image
+                    # (1, 1)
                     combined_vis_fig[:visualise_wh, :visualise_wh] = cropped_for_proxy_rgb.cpu().detach().numpy()[0].transpose(1, 2, 0)
 
                     # Proxy representation + 2D joints scatter + 2D joints confidences
@@ -493,14 +628,16 @@ def optimise_synth_data(pose_shape_model,
                     combined_vis_fig[visualise_wh:2*visualise_wh, :visualise_wh] = proxy_rep_input
 
                     # Posed 3D body
+                    
                     combined_vis_fig[:visualise_wh, visualise_wh:2*visualise_wh] = body_vis_rgb
-                    combined_vis_fig[visualise_wh:visualise_wh+256, visualise_wh:visualise_wh+256] = silh.repeat(3, 1, 1).cpu().detach().numpy().transpose(1, 2, 0)#body_vis_rgb_rot90
+                    combined_vis_fig[visualise_wh:2*visualise_wh, visualise_wh:2*visualise_wh] = body_vis_rgb_opt
+                    #combined_vis_fig[visualise_wh:visualise_wh+256, visualise_wh:visualise_wh+256] = silh.repeat(3, 1, 1).cpu().detach().numpy().transpose(1, 2, 0)#body_vis_rgb_rot90
                     combined_vis_fig[:visualise_wh, 2*visualise_wh:3*visualise_wh] = body_vis_rgb_rot180
                     combined_vis_fig[visualise_wh:2*visualise_wh, 2*visualise_wh:3*visualise_wh] = body_vis_rgb_rot270
 
                     # T-pose 3D body
                     combined_vis_fig[:visualise_wh, 3*visualise_wh:4*visualise_wh] = reposed_body_vis_rgb
-                    combined_vis_fig[visualise_wh:2*visualise_wh, 3*visualise_wh:4*visualise_wh] = reposed_body_vis_rgb_rot90
+                    combined_vis_fig[visualise_wh:2*visualise_wh, 3*visualise_wh:4*visualise_wh] = reposed_body_vis_rgb_opt
                     
                     save_dir = model_save_dir
                     image_fname = '0_result.png'

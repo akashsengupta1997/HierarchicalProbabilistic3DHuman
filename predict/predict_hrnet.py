@@ -33,6 +33,7 @@ def get_kp_locations_confs_from_heatmaps(batch_heatmaps):
 def predict_hrnet(hrnet_model,
                   hrnet_config,
                   image,
+                  silh=None,
                   object_detect_model=None,
                   object_detect_threshold=0.8,
                   bbox_scale_factor=1.2):
@@ -86,6 +87,7 @@ def predict_hrnet(hrnet_model,
     elif pred_height < pred_width * aspect_ratio:
         pred_height = pred_width * aspect_ratio
 
+
     # Crop input image to centre-most person box + resize to 384x288 for HRNet input.
     image = batch_crop_pytorch_affine(input_wh=(image_width, image_height),
                                       output_wh=(hrnet_config.MODEL.IMAGE_SIZE[0], hrnet_config.MODEL.IMAGE_SIZE[1]),
@@ -96,6 +98,18 @@ def predict_hrnet(hrnet_model,
                                       bbox_heights=pred_height[None],
                                       bbox_widths=pred_width[None],
                                       orig_scale_factor=bbox_scale_factor)['rgb'][0]  # (3, 384, 288)
+    # ------------- BEWARE -------------
+    if silh is not None:
+        silh = batch_crop_pytorch_affine(input_wh=(image_width, image_height),
+                                      output_wh=(hrnet_config.MODEL.IMAGE_SIZE[0], hrnet_config.MODEL.IMAGE_SIZE[1]),
+                                      num_to_crop=1,
+                                      device=image.device,
+                                      #rgb=image[None, :, :, :],
+                                      silh=silh[None, :, :, :],
+                                      bbox_centres=pred_centre[None, :],
+                                      bbox_heights=pred_height[None],
+                                      bbox_widths=pred_width[None],
+                                      orig_scale_factor=bbox_scale_factor)['silh'][0]  # (1, 384, 288)
 
     # Predict 2D joint heatmaps using HRNet
     transform = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -109,6 +123,7 @@ def predict_hrnet(hrnet_model,
     output = {'joints2D': pred_joints2D[0],
               'joints2Dconfs': pred_joints2Dconfs[0],
               'cropped_image': image,
+              'cropped_silh': silh,
               'bbox_centre': pred_centre,
               'bbox_height': pred_height,
               'bbox_width': pred_width}

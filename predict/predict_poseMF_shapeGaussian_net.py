@@ -104,6 +104,16 @@ def predict_poseMF_shapeGaussian_net(pose_shape_model,
             pred_shape_dist, pred_glob, pred_cam_wp = pose_shape_model(proxy_rep_input)
             # Pose F, U, V and rotmats_mode are (bsize, 23, 3, 3) and Pose S is (bsize, 23, 3)
 
+
+
+            betas = pred_shape_dist.loc.detach().cpu().numpy()
+            betas_fname = os.path.join(save_dir, os.path.splitext(image_fname)[0] + '_baseline_betas.npy')
+            print(betas_fname)
+            np.save(betas_fname, betas)
+            next
+
+            
+
             if pred_glob.shape[-1] == 3:
                 pred_glob_rotmats = batch_rodrigues(pred_glob)  # (1, 3, 3)
             elif pred_glob.shape[-1] == 6:

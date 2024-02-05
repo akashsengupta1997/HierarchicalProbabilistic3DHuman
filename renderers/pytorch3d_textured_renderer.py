@@ -220,7 +220,7 @@ class TexturedIUVRenderer(nn.Module):
             self.rgb_shader.to(device)
         self.iuv_shader.to(device)
 
-    def forward(self, vertices, textures=None, cam_t=None, orthographic_scale=None, lights_rgb_settings=None,
+    def forward(self, vertices, textures=None, cam_t=None, orthographic_scale=None, lights_rgb_settings=None, perspective_focal_length=None,
                 verts_features=None):
         """
         Render a batch of textured RGB images and IUV images from a batch of meshes.
@@ -252,6 +252,8 @@ class TexturedIUVRenderer(nn.Module):
             # Pytorch3D camera is rotated 180° about z-axis to match my perspective_project_torch/NMR's projection convention.
             # So, need to also rotate the given camera translation (implemented below as elementwise-mul).
             self.cameras.T = cam_t * torch.tensor([-1., -1., 1.], device=cam_t.device).float()
+        if perspective_focal_length is not None and self.projection_type == 'perspective':
+            self.cameras.focal_length = perspective_focal_length
         if orthographic_scale is not None and self.projection_type == 'orthographic':
             self.cameras.focal_length = orthographic_scale * (self.img_wh / 2.0)
 
@@ -275,7 +277,7 @@ class TexturedIUVRenderer(nn.Module):
 
         # Rasterize
         fragments = self.rasterizer(meshes_iuv, cameras=self.cameras)
-        zbuffers = fragments.zbuf[:, :, :, 0]
+        zbuffers = fragments.zbuf[:, :, :, 0] # fragments go in to shader rgb options different from silhouette shader, check blur radius
 
         # Render RGB and IUV outputs
         output = {}
