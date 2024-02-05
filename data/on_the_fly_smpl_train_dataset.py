@@ -48,7 +48,7 @@ class OnTheFlySMPLTrainDataset(Dataset):
         # Load LSUN backgrounds
         self.backgrounds_paths = sorted([os.path.join(backgrounds_dir_path, f)
                                          for f in os.listdir(backgrounds_dir_path)
-                                         if f.endswith('.jpg')])
+                                         if f.endswith('.jpg')][:1000]) # Load 1000 pics only
         self.img_wh = img_wh
 
     def __len__(self):
