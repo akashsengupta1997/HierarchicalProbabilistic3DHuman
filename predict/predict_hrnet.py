@@ -46,6 +46,7 @@ def predict_hrnet(hrnet_model,
     :return: bbox_centre, bbox_height, bbox_width: bounding box centre, height and width
 
     """
+    output = {}
     image_height, image_width = image.shape[1:]
     if object_detect_model is not None:
         # Detecting object bounding boxes in input image
@@ -110,6 +111,7 @@ def predict_hrnet(hrnet_model,
                                       bbox_heights=pred_height[None],
                                       bbox_widths=pred_width[None],
                                       orig_scale_factor=bbox_scale_factor)['silh'][0]  # (1, 384, 288)
+        output['cropped_silh'] = silh
 
     # Predict 2D joint heatmaps using HRNet
     transform = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -123,7 +125,6 @@ def predict_hrnet(hrnet_model,
     output = {'joints2D': pred_joints2D[0],
               'joints2Dconfs': pred_joints2Dconfs[0],
               'cropped_image': image,
-              'cropped_silh': silh,
               'bbox_centre': pred_centre,
               'bbox_height': pred_height,
               'bbox_width': pred_width}

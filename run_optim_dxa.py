@@ -15,7 +15,7 @@ from configs.poseMF_shapeGaussian_net_config import get_poseMF_shapeGaussian_cfg
 from configs.pose2D_hrnet_config import get_pose2D_hrnet_cfg_defaults
 from configs import paths
 
-from optimise.optim_w_joints_gif import optim_real_data
+from optimise.optimise_dxa import optim_real_data
 
 
 def run_predict(device,
@@ -120,7 +120,7 @@ def run_predict(device,
                                      joints2Dvisib_threshold=joints2Dvisib_threshold,
                                      visualise_uncropped=visualise_uncropped,
                                      visualise_samples=visualise_samples,
-                                     silh_opt_renderer=silh_opt_renderer,
+                                    #  silh_opt_renderer=silh_opt_renderer,
                                      verbose=verbose)
 
 
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     parser.add_argument('--visualise_uncropped', '-VU', action='store_true')
     parser.add_argument('--joints2Dvisib_threshold', '-T', type=float, default=0.75)
     parser.add_argument('--gender', '-G', type=str, default='neutral', choices=['neutral', 'male', 'female'], help='Gendered SMPL models may be used.')
-    parser.add_argument('--gpu', type=int, default=2)
+    parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--verbose', type=bool, default=False)
     args = parser.parse_args()
 

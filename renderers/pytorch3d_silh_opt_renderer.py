@@ -38,48 +38,7 @@ class SilhouetteRenderer(nn.Module):
                  blend_sigma=1e-4,
                  blend_gamma=1e-4,
                  background_color=(0.0, 0.0, 0.0)):
-        """
-        :param img_wh: Size of rendered image.
-        :param blur_radius: Float distance in the range [0, 2] used to expand the face
-            bounding boxes for rasterization. Setting blur radius
-            results in blurred edges around the shape instead of a
-            hard boundary.
-            Set to 0 (no blur) if rendering for visualisation purposes.
-        :param faces_per_pixel: Number of faces to save per pixel, returning
-            the nearest faces_per_pixel points along the z-axis.
-            Set to 1 if rendering for visualisation purposes.
-        :param bin_size: Size of bins to use for coarse-to-fine rasterization (i.e.
-            breaking image into tiles with size=bin_size before rasterising?).
-            Setting bin_size=0 uses naive rasterization; setting bin_size=None
-            attempts to set it heuristically based on the shape of the input (i.e. image_size).
-            This should not affect the output, but can affect the speed of the forward pass.
-            Heuristic based formula maps image_size -> bin_size as follows:
-                image_size < 64 -> 8
-                16 < image_size < 256 -> 16
-                256 < image_size < 512 -> 32
-                512 < image_size < 1024 -> 64
-                1024 < image_size < 2048 -> 128
-        :param max_faces_per_bin: Only applicable when using coarse-to-fine rasterization
-            (bin_size > 0); this is the maxiumum number of faces allowed within each
-            bin. If more than this many faces actually fall into a bin, an error
-            will be raised. This should not affect the output values, but can affect
-            the memory usage in the forward pass.
-            Heuristic used if None value given:
-                max_faces_per_bin = int(max(10000, meshes._F / 5))
-        :param perspective_correct: Bool, Whether to apply perspective correction when computing
-            barycentric coordinates for pixels.
-        :param cull_backfaces: Bool, Whether to only rasterize mesh faces which are
-            visible to the camera.  This assumes that vertices of
-            front-facing triangles are ordered in an anti-clockwise
-            fashion, and triangles that face away from the camera are
-            in a clockwise order relative to the current view
-            direction. NOTE: This will only work if the mesh faces are
-            consistently defined with counter-clockwise ordering when
-            viewed from the outside.
-        :param clip_barycentric_coords: By default, turn on clip_barycentric_coords if blur_radius > 0.
-        When blur_radius > 0, a face can be matched to a pixel that is outside the face,
-        resulting in negative barycentric coordinates.
-        """
+        
         super().__init__()
         self.img_wh = img_wh
         self.smpl_faces = smpl_faces
@@ -141,32 +100,7 @@ class SilhouetteRenderer(nn.Module):
                 cam_t=None,
                 perspective_focal_length=None,
                 orthographic_scale=None):
-        """
-        Render a batch of silhouette images from a batch of meshes.
-
-        Fragments output from rasterizer:
-        pix_to_face:
-          LongTensor of shape (B, image_size, image_size, faces_per_pixel)
-          specifying the indices of the faces (in the packed faces) which overlap each pixel in the image.
-        zbuf:
-          FloatTensor of shape (B, image_size, image_size, faces_per_pixel)
-          giving the z-coordinates of the nearest faces at each pixel in world coordinates, sorted in ascending z-order.
-        bary_coords:
-          FloatTensor of shape (B, image_size, image_size, faces_per_pixel, 3)
-          giving the barycentric coordinates in NDC units of the nearest faces at each pixel, sorted in ascending z-order.
-        pix_dists:
-          FloatTensor of shape (B, image_size, image_size, faces_per_pixel)
-          giving the signed Euclidean distance (in NDC units) in the x/y plane of each point closest to the pixel.
-
-        :param vertices: (B, N, 3)
-        :param cam_t: (B, 3)
-        :param perspective_focal_length: (B, 1)
-        :param orthographic_scale: (B, 2)
-        :param lights_rgb_settings: dict of lighting settings with location, ambient_color, diffuse_color and specular_color.
-        :returns rgb_images: (B, img_wh, img_wh, 3)
-        :returns iuv_images: (B, img_wh, img_wh, 3) IUV images give bodypart (I) + UV coordinate information. Parts are DP convention, indexed 1-24.
-        :returns depth_images: (B, img_wh, img_wh)
-        """
+        
         if cam_t is not None:
             # Pytorch3D camera is rotated 180° about z-axis to match my perspective_project_torch/NMR's projection convention.
             # So, need to also rotate the given camera translation (implemented below as elementwise-mul).
